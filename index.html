@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Off-Road Events — Your Season</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#13140f; --bg2:#1c1e16; --panel:#22251b; --panel-line:#3a3e2c;
+    --sand:#d8cba8; --ink:#ece7d6; --muted:#9a9c84;
+    --orange:#e8631a; --teal:#3fa89a; --blue:#4a91c4; --green:#7fae3a; --red:#c44a3a; --gray:#6b6d5e; --purple:#a98fd0;
+    --shadow:0 10px 30px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--ink);font-family:'Archivo',sans-serif;line-height:1.55;
+    background-image:
+      radial-gradient(circle at 12% 6%, rgba(232,99,26,.06), transparent 38%),
+      radial-gradient(circle at 88% 96%, rgba(127,174,58,.05), transparent 42%),
+      repeating-linear-gradient(0deg, transparent, transparent 38px, rgba(255,255,255,.012) 38px, rgba(255,255,255,.012) 39px),
+      repeating-linear-gradient(90deg, transparent, transparent 38px, rgba(255,255,255,.012) 38px, rgba(255,255,255,.012) 39px);
+  }
+  a{color:var(--orange)}
+  button{font-family:inherit}
+
+  /* top auth bar */
+  .topbar{position:sticky;top:0;z-index:1200;display:flex;align-items:center;gap:12px;
+    background:rgba(19,20,15,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--panel-line);
+    padding:9px 20px;max-width:100%;}
+  .topbar .brand{font-family:'Archivo Black',sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:.86rem;color:var(--orange)}
+  .topbar .brand small{color:var(--muted);font-family:'Saira Condensed';font-weight:600;letter-spacing:.1em;font-size:.66rem;margin-left:8px}
+  .topbar-actions{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+  .tb-email{font-family:'Saira Condensed';font-weight:600;font-size:.78rem;color:var(--sand);letter-spacing:.03em;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tb-btn{background:var(--bg2);border:1px solid var(--panel-line);color:var(--sand);
+    font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.74rem;
+    padding:7px 12px;border-radius:3px;cursor:pointer;transition:.15s;line-height:1}
+  .tb-btn:hover{border-color:var(--orange);color:var(--orange)}
+  .tb-btn.primary{background:var(--orange);color:#13140f;border-color:var(--orange)}
+  .tb-btn.primary:hover{background:#ff7a2e;color:#13140f}
+
+  header{max-width:1240px;margin:0 auto;padding:34px 28px 18px;position:relative}
+  .kicker{font-family:'Saira Condensed',sans-serif;font-weight:700;letter-spacing:.3em;text-transform:uppercase;font-size:.7rem;color:var(--orange);margin-bottom:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .kicker::before{content:"";width:34px;height:2px;background:var(--orange)}
+  h1{font-family:'Archivo Black',sans-serif;font-size:clamp(1.9rem,5vw,3.5rem);line-height:.96;letter-spacing:-.01em;color:var(--sand);text-transform:uppercase;margin-bottom:15px}
+  h1 .accent{color:var(--orange)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:'Saira Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:.83rem;color:var(--muted)}
+  .meta b{color:var(--ink);font-weight:700}
+  .meta .editlink{color:var(--orange);cursor:pointer;border-bottom:1px dashed rgba(232,99,26,.5)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .lg{display:flex;align-items:center;gap:8px;font-family:'Saira Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:.75rem;background:var(--panel);border:1px solid var(--panel-line);padding:5px 11px;border-radius:2px;color:var(--sand)}
+  .dot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(0,0,0,.3)}
+  .d-ds{background:var(--orange)}.d-en{background:var(--teal)}.d-hs{background:var(--blue)}.d-fun{background:var(--green)}.d-gncc{background:var(--red)}.d-home{background:#fff}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+
+  /* collapsible section shell (todos + sources) */
+  .acc{margin:18px auto 0;background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-left:4px solid var(--orange);border-radius:4px;box-shadow:var(--shadow);overflow:hidden}
+  .acc-head{display:flex;align-items:center;gap:12px;padding:15px 20px;cursor:pointer;user-select:none}
+  .acc-head h2{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:1.2rem;color:var(--sand)}
+  .acc-badge{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:.78rem;background:var(--orange);color:#13140f;padding:2px 9px;border-radius:20px;letter-spacing:.04em}
+  .acc-chev{margin-left:auto;font-family:'Saira Condensed';font-weight:800;color:var(--orange);transition:transform .25s;font-size:1.2rem}
+  .acc.collapsed .acc-chev{transform:rotate(-90deg)}
+  .acc-body{max-height:4000px;transition:max-height .4s ease,opacity .25s;opacity:1;padding:0 20px 18px}
+  .acc.collapsed .acc-body{max-height:0;opacity:0;padding-top:0;padding-bottom:0;overflow:hidden}
+
+  /* custom to-dos */
+  .td-composer{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+  .td-composer input[type=text]{flex:1;min-width:180px;background:var(--bg2);border:1px solid var(--panel-line);color:var(--ink);padding:9px 11px;border-radius:3px;font-size:.9rem}
+  .td-composer select{background:var(--bg2);border:1px solid var(--panel-line);color:var(--sand);padding:9px 10px;border-radius:3px;font-size:.82rem;max-width:200px}
+  .td-add{background:var(--orange);color:#13140f;border:none;font-family:'Saira Condensed';font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:.82rem;padding:9px 16px;border-radius:3px;cursor:pointer}
+  .td-add:hover{background:#ff7a2e}
+  .td-item{display:flex;align-items:center;gap:11px;padding:8px 10px;border:1px solid var(--panel-line);border-radius:3px;background:var(--bg2);margin-bottom:7px}
+  .td-item input.cb{appearance:none;-webkit-appearance:none;width:18px;height:18px;border:2px solid var(--muted);border-radius:3px;flex:none;cursor:pointer;position:relative;transition:.15s}
+  .td-item input.cb:checked{background:var(--green);border-color:var(--green)}
+  .td-item input.cb:checked::after{content:"✓";position:absolute;top:-3px;left:2px;color:#13140f;font-weight:800;font-size:.9rem}
+  .td-item .txt{flex:1;color:var(--ink);font-weight:500;cursor:text}
+  .td-item.done .txt{text-decoration:line-through;color:var(--muted)}
+  .td-item .evlink{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:.68rem;color:var(--orange);cursor:pointer;border:1px solid var(--panel-line);padding:3px 8px;border-radius:2px;white-space:nowrap}
+  .td-item .mini{background:transparent;border:1px solid var(--panel-line);color:var(--muted);width:26px;height:26px;border-radius:3px;cursor:pointer;font-size:.9rem;line-height:1;flex:none}
+  .td-item .mini:hover{border-color:var(--orange);color:var(--orange)}
+  .td-empty{color:var(--muted);font-size:.86rem;padding:8px 2px}
+  .td-edit{flex:1;background:var(--bg);border:1px solid var(--orange);color:var(--ink);padding:5px 8px;border-radius:3px;font-size:.9rem;font-family:inherit}
+
+  /* stage */
+  .stage{margin:16px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:880px){.stage{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-radius:4px;box-shadow:var(--shadow);overflow:hidden}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--panel-line)}
+  .panel-head h2{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:1.12rem;color:var(--sand)}
+  .mnav{display:flex;align-items:center;gap:10px}
+  .mnav button{background:var(--bg2);border:1px solid var(--panel-line);color:var(--sand);width:32px;height:32px;border-radius:3px;font-size:1.1rem;cursor:pointer;font-family:'Saira Condensed',sans-serif;font-weight:800;transition:.15s;line-height:1}
+  .mnav button:hover:not(:disabled){background:var(--orange);color:#13140f;border-color:var(--orange)}
+  .mnav button:disabled{opacity:.3;cursor:not-allowed}
+  .mnav .mlabel{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:1.08rem;color:var(--orange);min-width:124px;text-align:center}
+
+  .cal{padding:14px 16px 18px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .cal-dow{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.66rem;color:var(--muted);text-align:center;padding:4px 0}
+  .cal-cell{aspect-ratio:1;border:1px solid transparent;border-radius:3px;padding:5px 4px 4px;font-size:.78rem;color:var(--muted);position:relative;display:flex;flex-direction:column}
+  .cal-cell.in{background:rgba(255,255,255,.02);border-color:var(--panel-line);color:var(--sand)}
+  .cal-cell .dnum{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:.82rem;line-height:1}
+  .cal-cell.has{cursor:pointer;transition:.15s}
+  .cal-cell.has:hover{background:rgba(232,99,26,.12);border-color:var(--orange)}
+  .cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:auto;padding-top:3px}
+  .cal-dots .cd{width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+  .cal-cell.st-signedup{box-shadow:inset 0 0 0 2px var(--green)}
+  .cal-cell.st-going{box-shadow:inset 0 0 0 2px var(--orange)}
+  .cal-cell.st-maybe{box-shadow:inset 0 0 0 2px var(--blue)}
+  .cal-cell.st-notgoing{box-shadow:inset 0 0 0 2px var(--red)}
+  .cd-ds{background:var(--orange)}.cd-en{background:var(--teal)}.cd-hs{background:var(--blue)}.cd-fun{background:var(--green)}.cd-gncc{background:var(--red)}
+
+  #map{height:474px;width:100%}
+  .maphint{font-family:'Saira Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.07em;font-size:.69rem;color:var(--muted);padding:9px 16px;border-top:1px solid var(--panel-line)}
+  .leaflet-popup-content-wrapper{background:var(--panel);color:var(--ink);border-radius:3px;border:1px solid var(--panel-line);box-shadow:var(--shadow)}
+  .leaflet-popup-tip{background:var(--panel);border:1px solid var(--panel-line)}
+  .leaflet-popup-content{margin:12px 14px;font-family:'Archivo',sans-serif}
+  .pop-tag{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:.62rem;padding:2px 7px;border-radius:2px;color:#13140f;display:inline-block;margin-bottom:6px}
+  .pop-title{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:1.04rem;line-height:1.1;color:var(--sand);margin-bottom:3px}
+  .pop-meta{font-size:.8rem;color:var(--muted)}
+  .pop-link{display:inline-block;margin-top:7px;font-weight:700;font-size:.78rem;color:var(--orange);text-decoration:none}
+  .pin{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(0,0,0,.35);box-shadow:0 3px 8px rgba(0,0,0,.5)}
+  .pin span{transform:rotate(45deg);font-family:'Saira Condensed',sans-serif;font-weight:800;color:#13140f;font-size:.72rem}
+  .home-pin{width:22px;height:22px;background:#fff;border-radius:50%;border:3px solid var(--orange);box-shadow:0 0 0 4px rgba(232,99,26,.3),0 3px 8px rgba(0,0,0,.5)}
+
+  main{max-width:1240px;margin:0 auto;padding:26px 28px 0}
+  .list-head{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:1.4rem;color:var(--sand);margin-bottom:4px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .list-head .cnt{font-size:.82rem;font-weight:600;letter-spacing:.1em;color:var(--muted)}
+  .list-sub{color:var(--muted);font-size:.9rem;margin-bottom:16px}
+
+  /* filter bar */
+  .filters{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-radius:4px;padding:13px 15px;margin-bottom:20px;display:flex;flex-direction:column;gap:10px}
+  .frow{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  .frow .flab{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:.66rem;color:var(--muted);margin-right:3px;min-width:46px}
+  .chip{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.74rem;background:var(--bg2);border:1px solid var(--panel-line);color:var(--sand);padding:6px 11px;border-radius:20px;cursor:pointer;transition:.15s}
+  .chip:hover{border-color:var(--orange)}
+  .chip.active{background:var(--orange);color:#13140f;border-color:var(--orange)}
+  .chip.active.s-going{background:var(--orange)}
+  .chip.active.s-signedup{background:var(--green);border-color:var(--green)}
+  .chip.active.s-maybe{background:var(--blue);border-color:var(--blue)}
+  .chip.active.s-notgoing{background:var(--red);border-color:var(--red)}
+  .fctl{background:var(--bg2);border:1px solid var(--panel-line);color:var(--ink);padding:8px 11px;border-radius:3px;font-size:.85rem}
+  .fsearch{flex:1;min-width:160px}
+  .ftoggle{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.74rem;background:var(--bg2);border:1px solid var(--panel-line);color:var(--sand);padding:7px 12px;border-radius:3px;cursor:pointer}
+  .ftoggle.on{border-color:var(--orange);color:var(--orange)}
+  .fexport{font-family:'Saira Condensed';font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:.74rem;background:transparent;border:1px solid var(--green);color:var(--green);padding:7px 12px;border-radius:3px;cursor:pointer;margin-left:auto}
+  .fexport:hover{background:var(--green);color:#13140f}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+  .card{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-left-width:4px;border-radius:4px;padding:18px 18px 16px;position:relative;transition:transform .18s,box-shadow .18s,border-color .18s;scroll-margin-top:70px;display:flex;flex-direction:column}
+  .card:hover{box-shadow:var(--shadow)}
+  .card.flash{box-shadow:0 0 0 2px var(--orange),var(--shadow)}
+  .card.hidden-card{opacity:.55}
+  .c-ds{border-left-color:var(--orange)}.c-en{border-left-color:var(--teal)}.c-hs{border-left-color:var(--blue)}.c-fun{border-left-color:var(--green)}.c-gncc{border-left-color:var(--red)}
+  .tag{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:.63rem;padding:3px 9px;border-radius:2px;color:#13140f;display:inline-block;margin-bottom:10px}
+  .t-ds{background:var(--orange)}.t-en{background:var(--teal)}.t-hs{background:var(--blue)}.t-fun{background:var(--green)}.t-gncc{background:var(--red)}
+  .card h3{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:1.24rem;line-height:1.05;color:var(--sand);margin-bottom:3px}
+  .card .when{font-family:'Saira Condensed',sans-serif;font-weight:700;color:var(--orange);font-size:.92rem;letter-spacing:.03em;text-transform:uppercase;margin-bottom:9px}
+  .row{display:flex;gap:9px;font-size:.87rem;padding:4px 0;border-top:1px dashed var(--panel-line)}
+  .row:first-of-type{border-top:none}
+  .row .lab{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.71rem;color:var(--muted);min-width:64px;flex:none;padding-top:2px}
+  .row .val{color:var(--ink)}.row .val b{color:var(--sand)}
+  .dist{color:var(--teal);font-weight:700}
+
+  .statusbtns{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px}
+  .sbtn{flex:1;min-width:72px;font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:.74rem;background:var(--bg2);border:1px solid var(--panel-line);color:var(--sand);padding:8px 6px;border-radius:3px;cursor:pointer;transition:.13s}
+  .sbtn:hover{border-color:var(--orange)}
+  .sbtn.active.going{background:var(--orange);border-color:var(--orange);color:#13140f}
+  .sbtn.active.signedup{background:var(--green);border-color:var(--green);color:#13140f}
+  .sbtn.active.maybe{background:var(--blue);border-color:var(--blue);color:#13140f}
+  .sbtn.active.notgoing{background:var(--red);border-color:var(--red);color:#13140f}
+
+  .statusbox{margin-top:11px;border-radius:3px;padding:9px 11px;font-size:.85rem;display:flex;gap:9px;align-items:flex-start;border:1px solid var(--panel-line);background:var(--bg2)}
+  .statusbox .ic{font-family:'Saira Condensed',sans-serif;font-weight:800;flex:none;width:18px;text-align:center;font-size:1rem;line-height:1.3;color:var(--muted)}
+  .statusbox .stxt{color:var(--ink)}
+  .sb-label{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:.66rem;display:block;margin-bottom:2px;color:var(--muted)}
+  .notes{width:100%;margin-top:10px;background:var(--bg2);border:1px solid var(--panel-line);color:var(--ink);border-radius:3px;padding:8px 10px;font-family:inherit;font-size:.86rem;resize:vertical;min-height:42px}
+  .notes:focus{outline:none;border-color:var(--orange)}
+  .note-state{font-family:'Saira Condensed';font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:.62rem;color:var(--muted);height:12px;margin-top:2px}
+
+  .card-todos{margin-top:9px}
+  .card-todo{display:flex;align-items:center;gap:8px;font-size:.83rem;color:var(--ink);padding:3px 0}
+  .card-todo input{width:15px;height:15px;flex:none}
+  .card-todo.done span{text-decoration:line-through;color:var(--muted)}
+
+  .actions{margin-top:auto;padding-top:13px;display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  .cta{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.78rem;color:#13140f;background:var(--orange);padding:7px 13px;border-radius:2px;text-decoration:none;transition:background .15s;border:none;cursor:pointer}
+  .cta:hover{background:#ff7a2e}
+  .abtn{background:transparent;border:1px solid var(--panel-line);color:var(--sand);font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.72rem;padding:7px 11px;border-radius:2px;cursor:pointer;transition:.15s;text-decoration:none;display:inline-block}
+  .abtn:hover{border-color:var(--orange);color:var(--orange)}
+  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 20px;border:1px dashed var(--panel-line);border-radius:4px}
+
+  /* sources directory (compact) */
+  .sources{max-width:1240px;margin:30px auto 0;padding:0 28px}
+  .src-intro{color:var(--muted);font-size:.82rem;max-width:760px;margin:4px 0 16px}
+  .src-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .src-card{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-top:3px solid var(--orange);border-radius:4px;padding:13px 14px}
+  .src-card h3{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:.92rem;color:var(--sand);margin-bottom:2px}
+  .src-card .sc-sub{font-family:'Saira Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:.6rem;color:var(--orange);margin-bottom:8px}
+  .src-card ul{list-style:none}
+  .src-card li{padding:5px 0;border-top:1px dashed var(--panel-line);font-size:.78rem;line-height:1.35}
+  .src-card li:first-child{border-top:none}
+  .src-card a{font-weight:600;text-decoration:none;color:var(--sand);border-bottom:1px solid rgba(232,99,26,.4)}
+  .src-card a:hover{color:var(--orange)}
+  .src-card .note{display:block;color:var(--muted);font-size:.7rem;margin-top:1px}
+  .src-card a.ext::after{content:" ↗";color:var(--orange);font-size:.72rem}
+  .src-tier{grid-column:1/-1;font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.14em;font-size:.72rem;color:var(--orange);margin:12px 0 0;display:flex;align-items:center;gap:12px}
+  .src-tier::after{content:"";flex:1;height:1px;background:var(--panel-line)}
+
+  footer{max-width:1240px;margin:34px auto 0;padding:22px 28px 60px;border-top:1px solid var(--panel-line);color:var(--muted);font-size:.82rem}
+  footer b{color:var(--sand)} footer a{color:var(--orange);text-decoration:none} footer a:hover{text-decoration:underline}
+  .caveats{margin-top:10px;padding-left:18px} .caveats li{margin:5px 0}
+
+  /* overlay + modal */
+  .overlay{position:fixed;inset:0;z-index:2000;background:rgba(8,9,6,.82);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
+  .overlay[hidden]{display:none}
+  .modal{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-top:4px solid var(--orange);border-radius:6px;box-shadow:var(--shadow);width:100%;max-width:420px;padding:26px 24px;position:relative}
+  .modal h2{font-family:'Archivo Black',sans-serif;text-transform:uppercase;font-size:1.4rem;color:var(--sand);margin-bottom:5px;line-height:1}
+  .modal p.sub{color:var(--muted);font-size:.86rem;margin-bottom:16px}
+  .modal .x{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;line-height:1}
+  .modal .x:hover{color:var(--orange)}
+  .gbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:none;border-radius:4px;padding:11px;font-weight:700;font-size:.92rem;cursor:pointer;margin-bottom:14px}
+  .gbtn:hover{background:#f1f1f1}
+  .gbtn svg{width:18px;height:18px}
+  .divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-family:'Saira Condensed';font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:.66rem;margin:6px 0 14px}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--panel-line)}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.66rem;color:var(--muted);margin-bottom:4px}
+  .field input{width:100%;background:var(--bg2);border:1px solid var(--panel-line);color:var(--ink);border-radius:4px;padding:10px 12px;font-size:.92rem;font-family:inherit}
+  .field input:focus{outline:none;border-color:var(--orange)}
+  .modal-actions{display:flex;gap:9px;margin-top:6px}
+  .mbtn{flex:1;background:var(--orange);color:#13140f;border:none;border-radius:4px;padding:11px;font-family:'Saira Condensed';font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:.86rem;cursor:pointer}
+  .mbtn:hover{background:#ff7a2e}
+  .mbtn.ghost{background:transparent;border:1px solid var(--panel-line);color:var(--sand)}
+  .mbtn.ghost:hover{border-color:var(--orange);color:var(--orange)}
+  .modal .toggle-mode{text-align:center;margin-top:14px;font-size:.82rem;color:var(--muted)}
+  .modal .toggle-mode a{cursor:pointer}
+  .modal .forgot{text-align:right;font-size:.76rem;margin-top:-4px;margin-bottom:10px}
+  .modal .forgot a{cursor:pointer}
+  .modal .config-note{background:rgba(232,99,26,.08);border:1px solid var(--panel-line);border-radius:4px;padding:9px 11px;font-size:.78rem;color:var(--sand);margin-bottom:14px}
+  .modal .dismiss{text-align:center;margin-top:16px}
+  .modal .dismiss a{font-family:'Saira Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.74rem;color:var(--muted);cursor:pointer}
+  .modal .dismiss a:hover{color:var(--orange)}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);z-index:3000;background:var(--panel);border:1px solid var(--panel-line);border-left:3px solid var(--green);color:var(--ink);padding:11px 18px;border-radius:4px;box-shadow:var(--shadow);font-size:.88rem;opacity:0;pointer-events:none;transition:.25s;max-width:88vw}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{border-left-color:var(--red)}
+
+  @media(max-width:560px){
+    #map{height:380px}
+    header{padding:24px 18px 14px}
+    .wrap,main{padding-left:18px;padding-right:18px}
+    .sources{padding:0 18px}
+    .sbtn{min-width:0}
+  }
+</style>
+</head>
+<body>
+
+<!-- top auth bar -->
+<div class="topbar">
+  <span class="brand">RIDES<small id="modeLabel"></small></span>
+  <div class="topbar-actions">
+    <button class="tb-btn" id="settingsBtn">⚙ Home base</button>
+    <span id="authArea"></span>
+  </div>
+</div>
+
+<header>
+  <div class="kicker">Field Recon · DRZ400 · Dual Sport · Enduro · Hare Scramble · ADV · GNCC</div>
+  <h1>Dirt Within <span class="accent">Four Hours</span><br>· Jun → Nov 2026</h1>
+  <div class="meta">
+    <span>Home: <b id="homeLabelTxt">Davidsonville, MD</b> · <span class="editlink" id="editHomeLink">change</span></span>
+    <span>Ring: <b>~210 mi drive</b></span>
+    <span>Bike: <b>Street-legal DRZ400</b></span>
+    <span>Sources: <b>see the directory below ↓</b></span>
+  </div>
+  <div class="legend">
+    <span class="lg"><span class="dot d-home"></span>Home</span>
+    <span class="lg"><span class="dot d-ds"></span>Dual Sport</span>
+    <span class="lg"><span class="dot d-fun"></span>Fun / Family Ride</span>
+    <span class="lg"><span class="dot d-hs"></span>Hare Scramble</span>
+    <span class="lg"><span class="dot d-en"></span>Enduro</span>
+    <span class="lg"><span class="dot d-gncc"></span>GNCC</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- stage: calendar + map (month explorer) -->
+  <div class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Calendar</h2>
+        <div class="mnav">
+          <button id="prevM" aria-label="Previous month">‹</button>
+          <span class="mlabel" id="mLabel">June 2026</span>
+          <button id="nextM" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="cal">
+        <div class="cal-grid" id="dowRow"></div>
+        <div class="cal-grid" id="calGrid" style="margin-top:5px"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Map <span style="font-family:'Archivo';font-weight:400;font-size:.8rem;color:var(--muted);text-transform:none;letter-spacing:0">— showing <span id="mapMonth">June</span></span></h2>
+      </div>
+      <div id="map"></div>
+      <div class="maphint">Pins = events that month · Dashed ring ≈ 4 hr drive · Click a pin to jump to its card · Click the map once to enable zoom</div>
+    </div>
+  </div>
+
+  <!-- custom to-do list -->
+  <div class="acc collapsed" id="todoAcc">
+    <div class="acc-head" id="todoHead">
+      <h2>My To-Do List</h2>
+      <span class="acc-badge" id="todoBadge">0 open</span>
+      <span class="acc-chev">▾</span>
+    </div>
+    <div class="acc-body">
+      <div class="td-composer">
+        <input type="text" id="tdInput" placeholder="Add a task — e.g. new rear tire before Michaux">
+        <select id="tdEvent"><option value="">No event</option></select>
+        <button class="td-add" id="tdAdd">Add</button>
+      </div>
+      <div id="todoList"></div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="list-head">Events <span class="cnt" id="listCount"></span></div>
+  <div class="list-sub">Your season at a glance. Set a status on any card — it saves to your account and colors the calendar. Filter, search, and sort below.</div>
+
+  <div class="filters">
+    <div class="frow" id="statusChips">
+      <span class="flab">Show</span>
+      <button class="chip active" data-status="all">All</button>
+      <button class="chip" data-status="my">My Events</button>
+      <button class="chip s-going" data-status="going">Going</button>
+      <button class="chip s-signedup" data-status="signedup">Signed up</button>
+      <button class="chip s-maybe" data-status="maybe">Maybe</button>
+      <button class="chip s-notgoing" data-status="notgoing">Not going</button>
+      <button class="chip" data-status="undecided">Undecided</button>
+    </div>
+    <div class="frow" id="typeChips">
+      <span class="flab">Type</span>
+      <button class="chip active" data-type="all">All</button>
+      <button class="chip" data-type="ds">Dual Sport</button>
+      <button class="chip" data-type="en">Enduro</button>
+      <button class="chip" data-type="hs">Hare Scramble</button>
+      <button class="chip" data-type="fun">Fun Ride</button>
+      <button class="chip" data-type="gncc">GNCC</button>
+    </div>
+    <div class="frow">
+      <input type="text" class="fctl fsearch" id="searchBox" placeholder="Search title, venue, or club…">
+      <select class="fctl" id="sortBox">
+        <option value="date">Sort: Date</option>
+        <option value="distance">Sort: Distance</option>
+        <option value="type">Sort: Type</option>
+      </select>
+      <select class="fctl" id="monthBox">
+        <option value="all">All months</option>
+        <option value="5">June</option>
+        <option value="6">July</option>
+        <option value="7">August</option>
+        <option value="8">September</option>
+        <option value="9">October</option>
+        <option value="10">November</option>
+      </select>
+      <button class="ftoggle" id="hiddenToggle">Show hidden (0)</button>
+      <button class="fexport" id="exportAll">⬇ Export my season (.ics)</button>
+    </div>
+  </div>
+
+  <div class="grid" id="cards"></div>
+</main>
+
+<!-- SOURCES DIRECTORY (compact, collapsible) -->
+<section class="sources">
+  <div class="acc collapsed" id="srcAcc">
+    <div class="acc-head" id="srcHead">
+      <h2>The Source Directory</h2>
+      <span class="acc-badge">where the next batch lives</span>
+      <span class="acc-chev">▾</span>
+    </div>
+    <div class="acc-body">
+      <p class="src-intro">Everywhere off-road events in your range get posted — series, clubs, parks, aggregators, agencies, and Facebook groups. The clubs host the events; the series &amp; aggregators list them; the Facebook groups post the last-minute and unsanctioned ride calls.</p>
+      <div class="src-grid">
+
+        <div class="src-tier">AMA — National Hub &amp; Series</div>
+        <div class="src-card">
+          <h3>AMA</h3><div class="sc-sub">Master calendar &amp; sanctioning body</div>
+          <ul>
+            <li><a class="ext" href="https://americanmotorcyclist.com/events/event-resources/find-an-event/" target="_blank" rel="noopener">AMA Find-an-Event</a><span class="note">Filter every sanctioned event by type, state, date</span></li>
+            <li><a class="ext" href="https://americanmotorcyclist.com/riding/off-road-riding/dual-sport-riding/beta-ama-national-dual-sport-series/" target="_blank" rel="noopener">Beta AMA National Dual Sport Series</a><span class="note">Shenandoah 500 &amp; Hammer Run are in range</span></li>
+            <li><a class="ext" href="https://americanmotorcyclist.com/ama-national-adventure-riding-series-schedule-2026/" target="_blank" rel="noopener">Triumph AMA National Adventure Series</a><span class="note">12 ADV events</span></li>
+            <li><a class="ext" href="https://americanmotorcyclist.com/find-a-charter/" target="_blank" rel="noopener">AMA Charter Club / District finder</a><span class="note">Local clubs by zip</span></li>
+          </ul>
+        </div>
+        <div class="src-card">
+          <h3>AMA Districts</h3><div class="sc-sub">Where the local race series live</div>
+          <ul>
+            <li><a class="ext" href="https://www.google.com/search?q=AMA+District+6+enduro+hare+scramble+2026+schedule" target="_blank" rel="noopener">AMA District 6</a><span class="note">Central / eastern PA off-road</span></li>
+            <li><a class="ext" href="https://www.google.com/search?q=AMA+District+7+motorcycle+2026+schedule" target="_blank" rel="noopener">AMA District 7</a><span class="note">MD / DE / DC / N. Virginia</span></li>
+            <li><a class="ext" href="http://www.d13mx.com/" target="_blank" rel="noopener">AMA District 13</a><span class="note">Virginia — mostly motocross</span></li>
+          </ul>
+        </div>
+
+        <div class="src-tier">Race Series — Enduro · Hare Scramble · Cross-Country</div>
+        <div class="src-card">
+          <h3>ECEA</h3><div class="sc-sub">East Coast Enduro Assoc. — your #1 source</div>
+          <ul>
+            <li><a class="ext" href="https://ecea.org/events/" target="_blank" rel="noopener">ecea.org/events</a><span class="note">Full PA/NJ/NY/DE schedule + .ics export</span></li>
+            <li><a class="ext" href="https://ecea.org/clubs" target="_blank" rel="noopener">ECEA member clubs (19+)</a></li>
+            <li><a class="ext" href="https://ecea.org/resources#community" target="_blank" rel="noopener">ECEA Facebook groups list</a></li>
+          </ul>
+        </div>
+        <div class="src-card">
+          <h3>GNCC</h3><div class="sc-sub">Grand National Cross Country</div>
+          <ul><li><a class="ext" href="https://gnccracing.com/events" target="_blank" rel="noopener">gnccracing.com/events</a><span class="note">Snowshoe &amp; Mason-Dixon are in-range</span></li></ul>
+        </div>
+        <div class="src-card">
+          <h3>Virginia series</h3><div class="sc-sub">Hare scramble &amp; cross-country</div>
+          <ul>
+            <li><a class="ext" href="https://www.vchss.org/2026-schedule" target="_blank" rel="noopener">VCHSS</a><span class="note">7-round spring series</span></li>
+            <li><a class="ext" href="https://www.google.com/search?q=VXCS+Virginia+Cross+Country+Series+2026+schedule" target="_blank" rel="noopener">VXCS</a><span class="note">Moto + quad; southern VA</span></li>
+            <li><a class="ext" href="https://www.racevcorr.com/" target="_blank" rel="noopener">VCORR</a><span class="note">Off-season GP / night / team racing</span></li>
+          </ul>
+        </div>
+        <div class="src-card">
+          <h3>National &amp; hard enduro</h3><div class="sc-sub">Pro-level — list as you advance</div>
+          <ul>
+            <li><a class="ext" href="https://nationalenduro.app/schedule" target="_blank" rel="noopener">ANEC National Enduro</a><span class="note">Burning Rock, WV nearest</span></li>
+            <li><a class="ext" href="https://www.ushardenduro.com/events-schedule" target="_blank" rel="noopener">AMA National Hard Enduro</a><span class="note">Very advanced</span></li>
+            <li><a class="ext" href="https://www.naenduro.com/" target="_blank" rel="noopener">North American Enduro Cup</a></li>
+          </ul>
+        </div>
+
+        <div class="src-tier">Dual Sport / ADV Aggregators</div>
+        <div class="src-card">
+          <h3>USDualSports</h3><div class="sc-sub">The DS/ADV event clearinghouse</div>
+          <ul>
+            <li><a class="ext" href="https://www.usdualsports.com/events" target="_blank" rel="noopener">Event calendar</a></li>
+            <li><a class="ext" href="https://www.usdualsports.com/dual-sport-rides-near-me/" target="_blank" rel="noopener">Dual sport rides near you</a></li>
+            <li><a class="ext" href="https://www.usdualsports.com/adventure-motorcycle-gpx-map/" target="_blank" rel="noopener">Interactive GPX route map</a></li>
+          </ul>
+        </div>
+        <div class="src-card">
+          <h3>Forums &amp; route catalogs</h3><div class="sc-sub">Rides that never hit a calendar</div>
+          <ul>
+            <li><a class="ext" href="https://advrider.com/f/forums/rally-central.85/" target="_blank" rel="noopener">ADVrider — Rally Central</a></li>
+            <li><a class="ext" href="https://ridebdr.com/mabdr/" target="_blank" rel="noopener">Mid-Atlantic BDR (MABDR)</a><span class="note">VA→PA backcountry route</span></li>
+            <li><a class="ext" href="https://www.riderplanet-usa.com/" target="_blank" rel="noopener">RiderPlanet USA</a></li>
+          </ul>
+        </div>
+
+        <div class="src-tier">Clubs &amp; Promoters</div>
+        <div class="src-card">
+          <h3>PA / NJ clubs</h3><div class="sc-sub">Feed ECEA + national series</div>
+          <ul>
+            <li><a class="ext" href="https://dvtrailriders.org" target="_blank" rel="noopener">Delaware Valley Trail Riders</a><span class="note">Michaux DS, Foggy Mtn, High Steaks</span></li>
+            <li><a class="ext" href="https://www.durtydabbers.com/" target="_blank" rel="noopener">Durty Dabbers MC</a></li>
+            <li><a class="ext" href="https://www.google.com/search?q=TCSMC+Hammer+Run+National+Dual+Sport" target="_blank" rel="noopener">Tri-County Sportsmen (Hammer Run)</a></li>
+          </ul>
+        </div>
+        <div class="src-card">
+          <h3>MD / WV / VA clubs</h3><div class="sc-sub">Closest to home</div>
+          <ul>
+            <li><a class="ext" href="https://www.stonealley.com/program/WMMA/group/GreenRidge" target="_blank" rel="noopener">Western Maryland MC Assoc.</a><span class="note">Green Ridge Dual Sport</span></li>
+            <li><a class="ext" href="https://www.facebook.com/groups/700876140116042" target="_blank" rel="noopener">Fairmont Dual Sport Riders</a><span class="note">304 Detour</span></li>
+            <li><a class="ext" href="http://www.damnriders.org/" target="_blank" rel="noopener">DAMN Riders</a></li>
+          </ul>
+        </div>
+
+        <div class="src-tier">Parks &amp; Signup Platforms</div>
+        <div class="src-card">
+          <h3>Off-road parks</h3><div class="sc-sub">Pay-to-ride any weekend</div>
+          <ul>
+            <li><a class="ext" href="https://www.aoaatrails.com/" target="_blank" rel="noopener">AOAA — Coal Township, PA</a></li>
+            <li><a class="ext" href="https://www.rauschcreek.net/" target="_blank" rel="noopener">Rausch Creek, PA</a></li>
+            <li><a class="ext" href="https://www.buddscreek.com/" target="_blank" rel="noopener">Budds Creek MX, MD</a><span class="note">~1 hr</span></li>
+          </ul>
+        </div>
+        <div class="src-card">
+          <h3>Where you register</h3><div class="sc-sub">Bookmark the logins</div>
+          <ul>
+            <li><a class="ext" href="https://www.moto-tally.com/ECEA/Enduro/PreEntry.aspx" target="_blank" rel="noopener">Moto-Tally</a><span class="note">ECEA enduro / hare scramble</span></li>
+            <li><a class="ext" href="https://www.webscorer.com/" target="_blank" rel="noopener">Webscorer</a><span class="note">304 Detour &amp; many dual sports</span></li>
+            <li><a class="ext" href="https://northeastwheelsevents.com/" target="_blank" rel="noopener">Northeast Wheels Events</a></li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <b>How this was built:</b> crawled the AMA off-road series, ECEA, GNCC, VCHSS, VCORR, ANEC &amp; Hard Enduro, the dual-sport/ADV aggregators, the host clubs, and the off-road parks — following each source to the next until the leads ran out. The calendar holds every concretely-dated event confirmed within ~4 hours, June–Nov 2026.
+  <ul class="caveats">
+    <li>Drive times are estimates; the dashed ring is straight-line, not a true drive-time isochrone.</li>
+    <li>"Venue TBA" events are mapped at an approximate spot until the club posts the location.</li>
+    <li>Dual sports &amp; nationals sell out fast and statuses change daily — confirm on each event page before planning.</li>
+  </ul>
+</footer>
+
+<!-- LOGIN OVERLAY -->
+<div class="overlay" id="loginOverlay" hidden>
+  <div class="modal">
+    <button class="x" id="loginX" aria-label="Close">×</button>
+    <h2>Save your season</h2>
+    <p class="sub" id="loginSub">Sign in to sync your statuses, notes, and to-dos across every device.</p>
+    <div class="config-note" id="configNote" hidden>Sign-in isn't switched on yet — see <b>SETUP_GUIDE.md</b>. Until then your changes save to <b>this browser</b> and everything works.</div>
+    <button class="gbtn" id="googleBtn">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.5 2.6 30.1 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.8 6.1C12.2 13.3 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.7c-.5 3-2.2 5.5-4.7 7.2l7.3 5.7C43.9 37.5 46.5 31.6 46.5 24.5z"/><path fill="#FBBC05" d="M10.3 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.8-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.5 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.1 0 11.3-2 15-5.5l-7.3-5.7c-2 1.4-4.7 2.3-7.7 2.3-6.4 0-11.8-3.8-13.7-9.4l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+    <div class="divider">or email</div>
+    <div class="field"><label>Email</label><input type="email" id="emailIn" placeholder="you@email.com" autocomplete="email"></div>
+    <div class="field"><label>Password</label><input type="password" id="pwIn" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="forgot"><a id="forgotLink">Forgot password?</a></div>
+    <div class="modal-actions">
+      <button class="mbtn" id="signinBtn">Sign in</button>
+      <button class="mbtn ghost" id="signupBtn">Create account</button>
+    </div>
+    <div class="dismiss"><a id="dismissLink">Just browsing — skip for now →</a></div>
+  </div>
+</div>
+
+<!-- SETTINGS / HOME MODAL -->
+<div class="overlay" id="settingsOverlay" hidden>
+  <div class="modal">
+    <button class="x" id="settingsX" aria-label="Close">×</button>
+    <h2>Home base</h2>
+    <p class="sub">Sets your map center and the drive-distance estimates on each card.</p>
+    <div class="field"><label>Label</label><input type="text" id="homeLabel" placeholder="Davidsonville, MD"></div>
+    <div class="field"><label>Latitude</label><input type="text" id="homeLat" placeholder="38.9295"></div>
+    <div class="field"><label>Longitude</label><input type="text" id="homeLng" placeholder="-76.6300"></div>
+    <div class="modal-actions">
+      <button class="mbtn ghost" id="geoBtn">📍 Use my location</button>
+      <button class="mbtn" id="saveHome">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  /* ============================================================
+     CONFIG — PASTE YOUR SUPABASE VALUES HERE (see SETUP_GUIDE.md)
+     ============================================================ */
+  const SUPABASE_URL      = "https://gbgpjlnsghdsywuixvgh.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_7hblE0UH54dkEqjJmOnMdQ_a7spknLr";
+
+  const configured = !SUPABASE_URL.startsWith("YOUR_");
+  let supa = null;
+  if (configured && window.supabase) {
+    try { supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+    catch(e){ console.error('Supabase init failed', e); }
+  }
+
+  /* ---------- static data ---------- */
+  const TYPE = {
+    ds:{label:'Dual Sport'}, en:{label:'Enduro'}, hs:{label:'Hare Scramble'},
+    fun:{label:'Fun Ride'}, gncc:{label:'GNCC'}
+  };
+  const STATUS = {
+    going:{label:'Going'}, signedup:{label:'Signed up'},
+    maybe:{label:'Maybe'}, notgoing:{label:'Not going'}
+  };
+
+  // Master event list — shared, neutral. Each user's status lives in `state`.
+  const events = [
+    {start:'2026-06-14', dates:'Sun · Jun 14', short:'Jun 14', title:'Reading Hare Scramble', club:'ECEA / RORR', type:'hs', loc:'Maple Grove Raceway, Mohnton, PA', lat:40.2247, lng:-75.9560, drive:'~2.25 hr', sTxt:'Pre-entry open via Moto-Tally. New trail / venue for 2026. Beginner "C" class.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-06-20', dates:'Sat · Jun 20', short:'Jun 20', title:'Michaux Dual Sport', club:'ECEA / DVTR', type:'ds', loc:'Shippensburg Fairgrounds, PA', lat:40.0506, lng:-77.5180, drive:'~2 hr', sTxt:'Oldest dual sport in the country; sells out in minutes.', link:'https://dvtrailriders.org', linktxt:'DVTR Info'},
+    {start:'2026-06-21', dates:'Sun · Jun 21', short:'Jun 21', title:'Shotgun Enduro', club:'ECEA / HMDR', type:'en', loc:'Ryan Twp Grove, Barnsville, PA', lat:40.8323, lng:-76.0119, drive:'~2.75 hr', sTxt:'Old-school rock run in Delano. Sold out in 2025 — would need fast pre-entry.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-06-26', dates:'Fri–Sun · Jun 26–28', short:'Jun 26–28', title:'Snowshoe GNCC', club:'GNCC · Rd 9', type:'gncc', loc:'Snowshoe Mtn Resort, WV', lat:38.4115, lng:-79.9962, drive:'~4 hr', sTxt:'"Toughest, most unique race on the whole GNCC tour." Not a first-event pick.', link:'https://gnccracing.com/events', linktxt:'Series Info'},
+    {start:'2026-06-28', dates:'Sun · Jun 28', short:'Jun 28', title:'OxBo Hare Scramble', club:'ECEA / SPER', type:'hs', loc:'Tower City, PA', lat:40.5895, lng:-76.5536, drive:'~2.5 hr', sTxt:'Fast, flowy, rocky. Pre-entry open. Youth event the day before.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Pre-Enter'},
+
+    {start:'2026-07-17', dates:'Fri–Sun · Jul 17–19', short:'Jul 17–19', title:'304 Detour Dual Sport', club:'FDSR', type:'ds', loc:'Bunner Ridge Rd, Fairmont, WV', lat:39.5028, lng:-80.0989, drive:'~3.5 hr', sTxt:'Club-guided easy loop + ~85 mi hard loop. Watch for ride details and the FDSR Facebook group.', link:'https://www.facebook.com/groups/700876140116042', linktxt:'FDSR Group'},
+    {start:'2026-07-19', dates:'Sun · Jul 19', short:'Jul 19', title:'Foggy Mountain Enduro', club:'ECEA / DVTR', type:'en', loc:'PA mountains — venue TBA', lat:41.05, lng:-77.50, drive:'~3–4 hr', sTxt:'Pennsylvania mountain riding. Location not yet posted — watch Moto-Tally / ECEA.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Watch'},
+
+    {start:'2026-08-09', dates:'Sun · Aug 9', short:'Aug 9', title:'Three Springs Enduro', club:'ECEA / GMER', type:'en', loc:'8418 Ashman St, Three Springs, PA', lat:40.1973, lng:-77.9930, drive:'~2.5 hr', sTxt:'"Teetering on the edge." Enduro signup opens closer to the date.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-08-23', dates:'Sun · Aug 23', short:'Aug 23', title:'High Steaks Hare Scramble', club:'ECEA / DVTR', type:'hs', loc:'399 Halstead Rd, Clifford, PA', lat:41.6420, lng:-75.5860, drive:'~3.75 hr', sTxt:'Great NE-PA woods racing. Borderline on the 4-hr ring.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-08-30', dates:'Sun · Aug 30', short:'Aug 30', title:'Beehive Enduro', club:'ECEA / CDR · DER', type:'en', loc:'9544 Noble St, Mauricetown, NJ', lat:39.2698, lng:-74.9921, drive:'~3 hr', sTxt:'"Back in the sand." South-Jersey sandy enduro.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+
+    {start:'2026-09-05', dates:'Sat · Sep 5', short:'Sep 5', title:'High Mountain Fun Day', club:'ECEA / HMDR', type:'fun', loc:'142 Cabin Lane, Sugarloaf, PA', lat:40.9890, lng:-76.0680, drive:'~3 hr', sTxt:'"Wallow in the Hollow" — a no-pressure family fun ride, not a race.', link:'https://ecea.org/events/2026/26-special-hmdr-fun', linktxt:'Event Page'},
+    {start:'2026-09-13', dates:'Sun · Sep 13', short:'Sep 13', title:'Michaux Enduro', club:'ECEA / SPER', type:'en', loc:'1975 Birch Run Rd, Biglerville, PA', lat:40.0600, lng:-77.2700, drive:'~1.75 hr', sTxt:'Runs in Michaux State Forest — the closest event all year. Pre-entry opens closer to the date on Moto-Tally.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Sign Up'},
+    {start:'2026-09-20', dates:'Sun · Sep 20', short:'Sep 20', title:'Moonshine Enduro', club:'ECEA / VFTR · RORR', type:'en', loc:'Fern Glen, PA', lat:40.9700, lng:-76.0600, drive:'~3 hr', sTxt:'NE-PA enduro. Signup opens closer to the date.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-09-27', dates:'Sun · Sep 27', short:'Sep 27', title:'Fall Brawl Hare Scramble', club:'ECEA / MMC', type:'hs', loc:'New Jersey — venue TBA', lat:40.20, lng:-74.70, drive:'~3 hr', sTxt:'Fall racing in NJ. Location not yet posted — watch ECEA.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Watch'},
+
+    {start:'2026-10-02', dates:'Fri–Sun · Oct 2–4', short:'Oct 2–4', title:'Mason-Dixon GNCC', club:'GNCC · Rd 11', type:'gncc', loc:'Mathews Farm, Mount Morris, PA', lat:39.7300, lng:-80.1800, drive:'~3.5 hr', sTxt:'The in-range GNCC. Amateur racing runs — more approachable than Snowshoe.', link:'https://gnccracing.com/events', linktxt:'Series Info'},
+    {start:'2026-10-03', dates:'Sat–Sun · Oct 3–4', short:'Oct 3–4', title:'Shenandoah 500 Dual Sport', club:'Beta AMA National Dual Sport', type:'ds', loc:'Mount Solon, VA', lat:38.3457, lng:-79.0664, drive:'~3 hr', sTxt:'A premier AMA National Dual Sport in the Shenandoah Valley — scenic backroads + two-track, exactly the DRZ wheelhouse.', link:'https://www.google.com/search?q=Shenandoah+500+dual+sport+2026+registration', linktxt:'Find Signup'},
+    {start:'2026-10-11', dates:'Sun · Oct 11', short:'Oct 11', title:'RORR Dual Sport', club:'ECEA / RORR', type:'ds', loc:'PA — venue TBA (Reading area)', lat:40.30, lng:-76.00, drive:'~2.25 hr', sTxt:'ECEA bills it as "basically an enduro" — a meatier dual sport.', link:'https://ecea.org/events/2026/26-ds-rorr', linktxt:'Event Page'},
+    {start:'2026-10-18', dates:'Sun · Oct 18', short:'Oct 18', title:'Sahara Sands Hare Scramble', club:'ECEA / PBER · SJER', type:'hs', loc:'Eagleswood Township, NJ', lat:39.6600, lng:-74.3100, drive:'~3.25 hr', sTxt:'"Almost desert racing" — deep coastal sand.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-10-25', dates:'Sun · Oct 25', short:'Oct 25', title:'Scrub Pine Enduro', club:'ECEA / OCCR', type:'en', loc:'Brendan T. Byrne Forest, Vincentown, NJ', lat:39.8800, lng:-74.5800, drive:'~3 hr', sTxt:'Pine Barrens enduro. Signup opens closer to the date.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-10-31', dates:'Sat–Sun · Oct 31–Nov 1', short:'Oct 31–Nov 1', title:'Hammer Run National Dual Sport', club:'ECEA / TCSMC · AMA National DS', type:'ds', loc:'Port Elizabeth, NJ', lat:39.3120, lng:-74.9810, drive:'~3.25 hr', sTxt:'A two-day AMA National Dual Sport — solid street-legal DRZ ride to close out the season.', link:'https://ecea.org/events/2026/26-ds-tcsmc', linktxt:'Event Page'},
+
+    {start:'2026-11-15', dates:'Sun · Nov 15', short:'Nov 15', title:'Pine Barons Enduro', club:'ECEA / PBER', type:'en', loc:'1555 Route 532, Woodland Twp, NJ', lat:39.7800, lng:-74.5500, drive:'~3 hr', sTxt:'Last ECEA points enduro of the year in the pines before winter.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'}
+  ];
+
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const MIN={y:2026,m:5}, MAX={y:2026,m:10};
+  let cur={y:2026,m:5};
+
+  const DEFAULT_PROFILE={home_label:'Davidsonville, MD', home_lat:38.9295, home_lng:-76.6300};
+
+  /* ---------- app state ---------- */
+  let user = null;
+  let state = {};          // {event_key:{status,note,hidden}}
+  let todos = [];          // [{id,text,done,event_key,sort_order}]
+  let profile = {...DEFAULT_PROFILE};
+  let filters = {status:'all', type:'all', search:'', sort:'date', month:'all', showHidden:false};
+
+  /* ---------- helpers ---------- */
+  function slug(e){return e.start+'-'+e.title.replace(/[^a-z0-9]/gi,'').slice(0,10);}
+  function cardId(e){return 'ev-'+slug(e);}
+  function eventByKey(k){return events.find(e=>slug(e)===k);}
+  function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+  function persistMode(){return (supa && user) ? 'cloud' : 'local';}
+  function st(key){return state[key] || {};}
+
+  function toRad(d){return d*Math.PI/180;}
+  function distMiles(lat,lng){
+    const R=3958.8, dLat=toRad(lat-profile.home_lat), dLng=toRad(lng-profile.home_lng);
+    const a=Math.sin(dLat/2)**2 + Math.cos(toRad(profile.home_lat))*Math.cos(toRad(lat))*Math.sin(dLng/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+  function nextDay(s){const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+1);return d.toISOString().slice(0,10);}
+
+  let toastT=null;
+  function toast(msg,isErr){
+    const el=document.getElementById('toast'); el.textContent=msg;
+    el.className='show'+(isErr?' err':''); clearTimeout(toastT);
+    toastT=setTimeout(()=>el.className='',2600);
+  }
+
+  /* ---------- persistence: local ---------- */
+  function loadLocal(){
+    try{state=JSON.parse(lsGet('ev_state')||'{}');}catch(e){state={};}
+    try{todos=JSON.parse(lsGet('ev_todos')||'[]');}catch(e){todos=[];}
+    try{const p=JSON.parse(lsGet('ev_profile')||'null'); profile=p||{...DEFAULT_PROFILE};}catch(e){profile={...DEFAULT_PROFILE};}
+  }
+  function saveLocalState(){lsSet('ev_state',JSON.stringify(state));}
+  function saveLocalTodos(){lsSet('ev_todos',JSON.stringify(todos));}
+  function saveLocalProfile(){lsSet('ev_profile',JSON.stringify(profile));}
+
+  /* ---------- persistence: cloud ---------- */
+  async function loadCloud(){
+    state={}; todos=[]; profile={...DEFAULT_PROFILE};
+    const [s,t,p] = await Promise.all([
+      supa.from('user_event_status').select('*').eq('user_id',user.id),
+      supa.from('user_todos').select('*').eq('user_id',user.id).order('sort_order',{ascending:true}),
+      supa.from('user_profiles').select('*').eq('user_id',user.id).maybeSingle()
+    ]);
+    if(s.error||t.error) throw (s.error||t.error);
+    (s.data||[]).forEach(r=>state[r.event_key]={status:r.status,note:r.note,hidden:r.hidden});
+    todos=(t.data||[]).map(r=>({id:r.id,text:r.text,done:r.done,event_key:r.event_key,sort_order:r.sort_order}));
+    if(p && p.data){profile={home_label:p.data.home_label||DEFAULT_PROFILE.home_label,home_lat:p.data.home_lat??DEFAULT_PROFILE.home_lat,home_lng:p.data.home_lng??DEFAULT_PROFILE.home_lng};}
+  }
+
+  async function persistStatus(key){
+    const e=st(key);
+    if(persistMode()==='local'){saveLocalState();return;}
+    if(!e.status && !e.note && !e.hidden){
+      await supa.from('user_event_status').delete().eq('user_id',user.id).eq('event_key',key);
+    }else{
+      await supa.from('user_event_status').upsert({user_id:user.id,event_key:key,status:e.status||null,note:e.note||null,hidden:!!e.hidden,updated_at:new Date().toISOString()});
+    }
+  }
+  async function saveProfileRemote(){
+    if(persistMode()==='local'){saveLocalProfile();return;}
+    await supa.from('user_profiles').upsert({user_id:user.id,home_label:profile.home_label,home_lat:profile.home_lat,home_lng:profile.home_lng,updated_at:new Date().toISOString()});
+  }
+
+  /* ---------- migration on first login ---------- */
+  async function migrateLocalToCloud(){
+    const flag='ev_migrated_'+user.id;
+    if(lsGet(flag)) return false;
+    let localState={}, localTodos=[], localProfile=null;
+    try{localState=JSON.parse(lsGet('ev_state')||'{}');}catch(e){}
+    try{localTodos=JSON.parse(lsGet('ev_todos')||'[]');}catch(e){}
+    try{localProfile=JSON.parse(lsGet('ev_profile')||'null');}catch(e){}
+    let any=false;
+    for(const [k,v] of Object.entries(localState)){
+      if(v && (v.status||v.note||v.hidden)){
+        await supa.from('user_event_status').upsert({user_id:user.id,event_key:k,status:v.status||null,note:v.note||null,hidden:!!v.hidden});
+        any=true;
+      }
+    }
+    let i=0;
+    for(const t of localTodos){
+      await supa.from('user_todos').insert({user_id:user.id,text:t.text,done:!!t.done,event_key:t.event_key||null,sort_order:t.sort_order??i});
+      any=true; i++;
+    }
+    if(localProfile && localProfile.home_label){
+      await supa.from('user_profiles').upsert({user_id:user.id,home_label:localProfile.home_label,home_lat:localProfile.home_lat,home_lng:localProfile.home_lng});
+      any=true;
+    }
+    lsSet(flag,'1');
+    return any;
+  }
+
+  /* ---------- status / notes / hide actions ---------- */
+  async function setStatus(key,status){
+    const e=state[key]||(state[key]={});
+    e.status = (e.status===status)? null : status;
+    try{await persistStatus(key);}catch(err){toast('Save failed',true);console.error(err);}
+    renderCards(); renderCalendar(cur.y,cur.m); updateHiddenCount();
+  }
+  const noteTimers={};
+  function onNoteInput(key,val){
+    const e=state[key]||(state[key]={});
+    e.note=val;
+    const stEl=document.getElementById('ns-'+key); if(stEl)stEl.textContent='saving…';
+    clearTimeout(noteTimers[key]);
+    noteTimers[key]=setTimeout(async()=>{
+      try{await persistStatus(key); if(stEl)stEl.textContent='saved';}
+      catch(err){if(stEl)stEl.textContent='save failed';}
+      setTimeout(()=>{if(stEl)stEl.textContent='';},1400);
+    },600);
+  }
+  async function toggleHide(key){
+    const e=state[key]||(state[key]={});
+    e.hidden=!e.hidden;
+    try{await persistStatus(key);}catch(err){toast('Save failed',true);}
+    renderCards(); updateHiddenCount();
+    toast(e.hidden?'Event hidden':'Event shown');
+  }
+
+  /* ---------- to-dos ---------- */
+  async function addTodo(text,event_key){
+    text=(text||'').trim(); if(!text)return;
+    const sort_order=todos.length;
+    if(persistMode()==='cloud'){
+      const {data,error}=await supa.from('user_todos').insert({user_id:user.id,text,done:false,event_key:event_key||null,sort_order}).select().single();
+      if(error){toast('Save failed',true);return;}
+      todos.push({id:data.id,text:data.text,done:data.done,event_key:data.event_key,sort_order:data.sort_order});
+    }else{
+      todos.push({id:'l'+Date.now()+Math.random().toString(36).slice(2,6),text,done:false,event_key:event_key||null,sort_order});
+      saveLocalTodos();
+    }
+    renderTodos(); renderCards();
+  }
+  async function updateTodo(t,patch){
+    Object.assign(t,patch);
+    if(persistMode()==='cloud'){
+      const {error}=await supa.from('user_todos').update({text:t.text,done:t.done,event_key:t.event_key,sort_order:t.sort_order}).eq('id',t.id);
+      if(error)toast('Save failed',true);
+    }else saveLocalTodos();
+    renderTodos(); renderCards();
+  }
+  async function deleteTodo(t){
+    todos=todos.filter(x=>x.id!==t.id);
+    if(persistMode()==='cloud'){await supa.from('user_todos').delete().eq('id',t.id);}
+    else saveLocalTodos();
+    renderTodos(); renderCards();
+  }
+  async function moveTodo(t,dir){
+    const i=todos.indexOf(t), j=i+dir;
+    if(j<0||j>=todos.length)return;
+    todos.splice(i,1); todos.splice(j,0,t);
+    todos.forEach((x,k)=>x.sort_order=k);
+    if(persistMode()==='cloud'){
+      for(const x of todos){await supa.from('user_todos').update({sort_order:x.sort_order}).eq('id',x.id);}
+    }else saveLocalTodos();
+    renderTodos();
+  }
+
+  /* ---------- calendar export ---------- */
+  function gcalUrl(e){
+    const d=e.start.replace(/-/g,''), nxt=nextDay(e.start).replace(/-/g,'');
+    const text=encodeURIComponent(e.title);
+    const details=encodeURIComponent((e.sTxt||'')+(e.link?'\n\nMore: '+e.link:''));
+    const loc=encodeURIComponent(e.loc||'');
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${d}/${nxt}&details=${details}&location=${loc}`;
+  }
+  function icsEsc(s){return (s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');}
+  function buildIcs(evs){
+    const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Off-Road Events//rides//EN','CALSCALE:GREGORIAN'];
+    evs.forEach(e=>{
+      L.push('BEGIN:VEVENT','UID:'+slug(e)+'@rides.spencerflaherty.com',
+        'DTSTART;VALUE=DATE:'+e.start.replace(/-/g,''),
+        'DTEND;VALUE=DATE:'+nextDay(e.start).replace(/-/g,''),
+        'SUMMARY:'+icsEsc(e.title),'LOCATION:'+icsEsc(e.loc),
+        'DESCRIPTION:'+icsEsc((e.sTxt||'')+(e.link?'  More: '+e.link:'')),'END:VEVENT');
+    });
+    L.push('END:VCALENDAR');
+    return L.join('\r\n');
+  }
+  function downloadIcs(filename,text){
+    const blob=new Blob([text],{type:'text/calendar;charset=utf-8'});
+    const url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  }
+  function exportSeason(){
+    const evs=events.filter(e=>['going','signedup'].includes(st(slug(e)).status));
+    if(!evs.length){toast('Mark some events Going or Signed up first',true);return;}
+    downloadIcs('my-off-road-season.ics',buildIcs(evs));
+    toast(`Exported ${evs.length} event${evs.length>1?'s':''}`);
+  }
+
+  /* ============================================================
+     MAP
+     ============================================================ */
+  const map=L.map('map',{scrollWheelZoom:false}).setView([39.4,-77.9],7);
+  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap (CC-BY-SA) · © OpenStreetMap'}).addTo(map);
+  map.on('click',()=>map.scrollWheelZoom.enable());
+  let homeLayer=L.layerGroup().addTo(map);
+  let eventLayer=L.layerGroup().addTo(map);
+  const homeIcon=L.divIcon({className:'',html:'<div class="home-pin"></div>',iconSize:[22,22],iconAnchor:[11,11]});
+
+  function renderHome(){
+    homeLayer.clearLayers();
+    L.circle([profile.home_lat,profile.home_lng],{radius:338000,color:'#e8631a',weight:1.5,dashArray:'7 7',fillColor:'#e8631a',fillOpacity:0.04}).addTo(homeLayer);
+    L.marker([profile.home_lat,profile.home_lng],{icon:homeIcon}).addTo(homeLayer)
+      .bindPopup('<div class="pop-title">Home Base</div><div class="pop-meta">'+esc(profile.home_label)+'</div>');
+  }
+  function monthEvents(y,m){return events.filter(e=>{const d=new Date(e.start+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m;});}
+
+  function renderMap(y,m){
+    eventLayer.clearLayers();
+    const evs=monthEvents(y,m); const bounds=[[profile.home_lat,profile.home_lng]];
+    evs.forEach(e=>{
+      const col=getComputedStyle(document.documentElement).getPropertyValue('--'+({ds:'orange',en:'teal',hs:'blue',fun:'green',gncc:'red'}[e.type])).trim();
+      const day=new Date(e.start+'T00:00:00').getDate();
+      const icon=L.divIcon({className:'',html:`<div class="pin" style="background:${col}"><span>${day}</span></div>`,iconSize:[26,26],iconAnchor:[13,24],popupAnchor:[0,-22]});
+      const mk=L.marker([e.lat,e.lng],{icon}).addTo(eventLayer);
+      const link=e.link?`<a class="pop-link" href="${e.link}" target="_blank" rel="noopener">${e.linktxt} →</a>`:'';
+      mk.bindPopup(`<span class="pop-tag" style="background:${col}">${TYPE[e.type].label}</span><div class="pop-title">${esc(e.title)}</div><div class="pop-meta">${e.dates} · ${esc(e.loc)} · ${e.drive}</div>${link}`);
+      mk.on('click',()=>jumpToEvent(e));
+      bounds.push([e.lat,e.lng]);
+    });
+    if(bounds.length>1)map.fitBounds(bounds,{padding:[45,45],maxZoom:9}); else map.setView([profile.home_lat,profile.home_lng],7);
+  }
+
+  /* ============================================================
+     CALENDAR
+     ============================================================ */
+  function renderCalendar(y,m){
+    const dow=['Su','Mo','Tu','We','Th','Fr','Sa'];
+    const dowRow=document.getElementById('dowRow'); dowRow.innerHTML='';
+    dow.forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;dowRow.appendChild(el);});
+    const grid=document.getElementById('calGrid'); grid.innerHTML='';
+    const startDow=new Date(y,m,1).getDay(); const days=new Date(y,m+1,0).getDate();
+    const byDay={}; monthEvents(y,m).forEach(e=>{const d=new Date(e.start+'T00:00:00').getDate();(byDay[d]=byDay[d]||[]).push(e);});
+    for(let i=0;i<startDow;i++){const c=document.createElement('div');c.className='cal-cell';grid.appendChild(c);}
+    const prio=['going','signedup','maybe','notgoing'];
+    for(let d=1;d<=days;d++){
+      const c=document.createElement('div'); c.className='cal-cell in';
+      const list=byDay[d]||[]; let dots='';
+      if(list.length){
+        c.classList.add('has');
+        const statuses=list.map(e=>st(slug(e)).status).filter(Boolean);
+        const top=prio.find(p=>statuses.includes(p));
+        if(top)c.classList.add('st-'+top);
+        dots='<div class="cal-dots">'+list.map(e=>`<span class="cd cd-${e.type}"></span>`).join('')+'</div>';
+        c.title=list.map(e=>e.title).join(' · ');
+        c.addEventListener('click',()=>jumpToEvent(list[0]));
+      }
+      c.innerHTML=`<span class="dnum">${d}</span>${dots}`; grid.appendChild(c);
+    }
+  }
+
+  /* ============================================================
+     EVENT LIST (filterable, decoupled from month explorer)
+     ============================================================ */
+  function passesFilters(e){
+    const s=st(slug(e));
+    if(!filters.showHidden && s.hidden) return false;
+    if(filters.status!=='all'){
+      const cs=s.status||null;
+      if(filters.status==='my'){ if(!['going','signedup'].includes(cs))return false; }
+      else if(filters.status==='undecided'){ if(cs)return false; }
+      else if(cs!==filters.status) return false;
+    }
+    if(filters.type!=='all' && e.type!==filters.type) return false;
+    if(filters.month!=='all'){ if(new Date(e.start+'T00:00:00').getMonth()!==+filters.month)return false; }
+    if(filters.search){
+      const q=filters.search.toLowerCase();
+      if(!(e.title+' '+e.loc+' '+e.club).toLowerCase().includes(q))return false;
+    }
+    return true;
+  }
+  function sortEvents(evs){
+    if(filters.sort==='distance')return evs.sort((a,b)=>distMiles(a.lat,a.lng)-distMiles(b.lat,b.lng));
+    if(filters.sort==='type')return evs.sort((a,b)=>TYPE[a.type].label.localeCompare(TYPE[b.type].label)||a.start.localeCompare(b.start));
+    return evs.sort((a,b)=>a.start.localeCompare(b.start));
+  }
+
+  function renderCards(){
+    const wrap=document.getElementById('cards'); wrap.innerHTML='';
+    const evs=sortEvents(events.filter(passesFilters));
+    document.getElementById('listCount').textContent=`· ${evs.length} of ${events.length}`;
+    if(!evs.length){wrap.innerHTML='<div class="empty">No events match these filters. Loosen them, or hit the Source Directory below to keep hunting.</div>';return;}
+    evs.forEach(e=>{
+      const key=slug(e), s=st(key);
+      const mi=Math.round(distMiles(e.lat,e.lng));
+      const card=document.createElement('div');
+      card.className='card c-'+e.type+(s.hidden?' hidden-card':''); card.id=cardId(e);
+
+      const sbtns=Object.keys(STATUS).map(k=>
+        `<button class="sbtn ${k}${s.status===k?' active':''}" data-status="${k}">${STATUS[k].label}</button>`).join('');
+
+      const myTodos=todos.filter(t=>t.event_key===key);
+      const todoHtml=myTodos.length?`<div class="card-todos">${myTodos.map(t=>
+        `<label class="card-todo${t.done?' done':''}"><input type="checkbox" data-tid="${t.id}" ${t.done?'checked':''}><span>${esc(t.text)}</span></label>`).join('')}</div>`:'';
+
+      const cta=e.link?`<a class="cta" href="${e.link}" target="_blank" rel="noopener">${e.linktxt} →</a>`:'';
+
+      card.innerHTML=`
+        <span class="tag t-${e.type}">${TYPE[e.type].label}</span>
+        <h3>${esc(e.title)}</h3>
+        <div class="when">${e.dates}</div>
+        <div class="row"><span class="lab">Club</span><span class="val">${esc(e.club)}</span></div>
+        <div class="row"><span class="lab">Where</span><span class="val">${esc(e.loc)}</span></div>
+        <div class="row"><span class="lab">Distance</span><span class="val"><span class="dist">≈ ${mi} mi</span> · ${e.drive} est. drive</span></div>
+        <div class="statusbtns">${sbtns}</div>
+        <div class="statusbox"><span class="ic">i</span><span class="stxt"><span class="sb-label">Intel</span>${esc(e.sTxt)}</span></div>
+        <textarea class="notes" placeholder="Your notes — tire choice, ride buddies, reminders…">${esc(s.note||'')}</textarea>
+        <div class="note-state" id="ns-${key}"></div>
+        ${todoHtml}
+        <div class="actions">
+          ${cta}
+          <a class="abtn" href="${gcalUrl(e)}" target="_blank" rel="noopener">+ Google Cal</a>
+          <button class="abtn" data-act="ics">.ics</button>
+          <button class="abtn" data-act="todo">+ To-do</button>
+          <button class="abtn" data-act="hide">${s.hidden?'Unhide':'Hide'}</button>
+        </div>`;
+
+      card.querySelectorAll('.sbtn').forEach(b=>b.addEventListener('click',()=>setStatus(key,b.dataset.status)));
+      const ta=card.querySelector('.notes');
+      ta.addEventListener('input',()=>onNoteInput(key,ta.value));
+      card.querySelector('[data-act="ics"]').addEventListener('click',()=>{downloadIcs(slug(e)+'.ics',buildIcs([e]));toast('Calendar file downloaded');});
+      card.querySelector('[data-act="hide"]').addEventListener('click',()=>toggleHide(key));
+      card.querySelector('[data-act="todo"]').addEventListener('click',()=>addTodoForEvent(key));
+      card.querySelectorAll('.card-todo input').forEach(cb=>cb.addEventListener('change',()=>{
+        const t=todos.find(x=>x.id===cb.dataset.tid); if(t)updateTodo(t,{done:cb.checked});
+      }));
+      wrap.appendChild(card);
+    });
+  }
+
+  function jumpToEvent(e){
+    // reset list filters so the card is guaranteed visible
+    filters={status:'all',type:'all',search:'',sort:filters.sort,month:'all',showHidden:true};
+    syncFilterUI();
+    const d=new Date(e.start+'T00:00:00'); cur={y:d.getFullYear(),m:d.getMonth()}; updateStage();
+    renderCards();
+    setTimeout(()=>{const c=document.getElementById(cardId(e));if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),1600);}},80);
+  }
+
+  function syncFilterUI(){
+    document.querySelectorAll('#statusChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.status===filters.status));
+    document.querySelectorAll('#typeChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.type===filters.type));
+    document.getElementById('searchBox').value=filters.search;
+    document.getElementById('sortBox').value=filters.sort;
+    document.getElementById('monthBox').value=filters.month;
+    const ht=document.getElementById('hiddenToggle'); ht.classList.toggle('on',filters.showHidden);
+  }
+  function updateHiddenCount(){
+    const n=events.filter(e=>st(slug(e)).hidden).length;
+    document.getElementById('hiddenToggle').textContent=`${filters.showHidden?'Hiding off':'Show hidden'} (${n})`;
+  }
+
+  /* ============================================================
+     TO-DO LIST
+     ============================================================ */
+  function fillTodoEventSelect(){
+    const sel=document.getElementById('tdEvent');
+    const keep=sel.value;
+    sel.innerHTML='<option value="">No event</option>'+events.map(e=>`<option value="${slug(e)}">${esc(e.title)} — ${e.short}</option>`).join('');
+    sel.value=keep;
+  }
+  function renderTodos(){
+    const open=todos.filter(t=>!t.done).length;
+    document.getElementById('todoBadge').textContent=open+' open';
+    const list=document.getElementById('todoList'); list.innerHTML='';
+    if(!todos.length){list.innerHTML='<div class="td-empty">No to-dos yet. Add tasks like "buy tear-offs" or "new rear tire before Michaux" — link one to an event to see it on that card.</div>';return;}
+    todos.forEach(t=>{
+      const ev=t.event_key?eventByKey(t.event_key):null;
+      const row=document.createElement('div'); row.className='td-item'+(t.done?' done':'');
+      row.innerHTML=`
+        <input type="checkbox" class="cb" ${t.done?'checked':''}>
+        <span class="txt">${esc(t.text)}</span>
+        ${ev?`<span class="evlink">${esc(ev.short)} · ${esc(ev.title)}</span>`:''}
+        <button class="mini" data-act="up" title="Move up">↑</button>
+        <button class="mini" data-act="down" title="Move down">↓</button>
+        <button class="mini" data-act="del" title="Delete">×</button>`;
+      row.querySelector('.cb').addEventListener('change',e=>updateTodo(t,{done:e.target.checked}));
+      const txt=row.querySelector('.txt');
+      txt.addEventListener('dblclick',()=>startEditTodo(t,txt));
+      if(ev)row.querySelector('.evlink').addEventListener('click',()=>jumpToEvent(ev));
+      row.querySelector('[data-act="up"]').addEventListener('click',()=>moveTodo(t,-1));
+      row.querySelector('[data-act="down"]').addEventListener('click',()=>moveTodo(t,1));
+      row.querySelector('[data-act="del"]').addEventListener('click',()=>deleteTodo(t));
+      list.appendChild(row);
+    });
+  }
+  function startEditTodo(t,span){
+    const inp=document.createElement('input'); inp.className='td-edit'; inp.value=t.text;
+    span.replaceWith(inp); inp.focus();
+    const save=()=>{const v=inp.value.trim(); if(v&&v!==t.text)updateTodo(t,{text:v}); else renderTodos();};
+    inp.addEventListener('blur',save);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape')renderTodos();});
+  }
+  function addTodoForEvent(key){
+    const acc=document.getElementById('todoAcc'); acc.classList.remove('collapsed');
+    document.getElementById('tdEvent').value=key;
+    const inp=document.getElementById('tdInput'); inp.focus();
+    acc.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  /* ============================================================
+     AUTH
+     ============================================================ */
+  function updateAuthUI(){
+    const area=document.getElementById('authArea');
+    document.getElementById('modeLabel').textContent = (supa&&user) ? ' · synced' : (configured?' · not signed in':' · local');
+    if(user){
+      area.innerHTML=`<span class="tb-email">${esc(user.email||'signed in')}</span><button class="tb-btn" id="signoutBtn">Sign out</button>`;
+      document.getElementById('signoutBtn').addEventListener('click',doSignOut);
+    }else{
+      area.innerHTML=`<button class="tb-btn primary" id="signinTop">Sign in</button>`;
+      document.getElementById('signinTop').addEventListener('click',openLogin);
+    }
+  }
+  function openLogin(){document.getElementById('loginOverlay').hidden=false;}
+  function closeLogin(){document.getElementById('loginOverlay').hidden=true;sessionStorage.setItem('ev_login_dismissed','1');}
+  function notConfigured(){toast('Sign-in not set up yet — see SETUP_GUIDE.md',true);}
+
+  async function doGoogle(){
+    if(!supa)return notConfigured();
+    const {error}=await supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href.split('#')[0]}});
+    if(error)toast(error.message,true);
+  }
+  async function doEmail(mode){
+    if(!supa)return notConfigured();
+    const email=document.getElementById('emailIn').value.trim();
+    const pw=document.getElementById('pwIn').value;
+    if(!email||!pw){toast('Enter email and password',true);return;}
+    if(mode==='up'){
+      const {error}=await supa.auth.signUp({email,password:pw});
+      if(error)return toast(error.message,true);
+      toast('Account created — check your email if confirmation is on, then sign in.');
+    }else{
+      const {error}=await supa.auth.signInWithPassword({email,password:pw});
+      if(error)return toast(error.message,true);
+      // onAuthStateChange handles reload
+    }
+  }
+  async function doReset(){
+    if(!supa)return notConfigured();
+    const email=document.getElementById('emailIn').value.trim();
+    if(!email){toast('Enter your email first',true);return;}
+    const {error}=await supa.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});
+    toast(error?error.message:'Password reset email sent',!!error);
+  }
+  async function doSignOut(){ if(supa){await supa.auth.signOut();} }
+
+  /* ============================================================
+     SETTINGS / HOME
+     ============================================================ */
+  function openSettings(){
+    document.getElementById('homeLabel').value=profile.home_label||'';
+    document.getElementById('homeLat').value=profile.home_lat;
+    document.getElementById('homeLng').value=profile.home_lng;
+    document.getElementById('settingsOverlay').hidden=false;
+  }
+  function closeSettings(){document.getElementById('settingsOverlay').hidden=true;}
+  async function saveHome(){
+    const label=document.getElementById('homeLabel').value.trim()||'Home';
+    const lat=parseFloat(document.getElementById('homeLat').value);
+    const lng=parseFloat(document.getElementById('homeLng').value);
+    if(isNaN(lat)||isNaN(lng)){toast('Latitude and longitude must be numbers',true);return;}
+    profile={home_label:label,home_lat:lat,home_lng:lng};
+    try{await saveProfileRemote();}catch(e){toast('Save failed',true);}
+    applyHome(); closeSettings(); toast('Home base updated');
+  }
+  function applyHome(){
+    document.getElementById('homeLabelTxt').textContent=profile.home_label;
+    renderHome(); renderMap(cur.y,cur.m); renderCards();
+  }
+  function useMyLocation(){
+    if(!navigator.geolocation){toast('Geolocation not available',true);return;}
+    navigator.geolocation.getCurrentPosition(p=>{
+      document.getElementById('homeLat').value=p.coords.latitude.toFixed(4);
+      document.getElementById('homeLng').value=p.coords.longitude.toFixed(4);
+      if(!document.getElementById('homeLabel').value.trim())document.getElementById('homeLabel').value='My location';
+      toast('Location captured — Save to apply');
+    },()=>toast('Could not get your location',true));
+  }
+
+  /* ============================================================
+     MONTH EXPLORER
+     ============================================================ */
+  function updateStage(){
+    document.getElementById('mLabel').textContent=`${MONTHS[cur.m]} ${cur.y}`;
+    document.getElementById('mapMonth').textContent=MONTHS[cur.m];
+    document.getElementById('prevM').disabled=(cur.y===MIN.y&&cur.m<=MIN.m);
+    document.getElementById('nextM').disabled=(cur.y===MAX.y&&cur.m>=MAX.m);
+    renderCalendar(cur.y,cur.m); renderMap(cur.y,cur.m);
+  }
+
+  /* ============================================================
+     WIRE UP + BOOT
+     ============================================================ */
+  function wireUI(){
+    document.getElementById('prevM').addEventListener('click',()=>{if(cur.m>MIN.m||cur.y>MIN.y){cur.m--;if(cur.m<0){cur.m=11;cur.y--;}updateStage();}});
+    document.getElementById('nextM').addEventListener('click',()=>{if(cur.m<MAX.m||cur.y<MAX.y){cur.m++;if(cur.m>11){cur.m=0;cur.y++;}updateStage();}});
+
+    document.getElementById('todoHead').addEventListener('click',()=>document.getElementById('todoAcc').classList.toggle('collapsed'));
+    document.getElementById('srcHead').addEventListener('click',()=>document.getElementById('srcAcc').classList.toggle('collapsed'));
+    document.getElementById('tdAdd').addEventListener('click',()=>{const i=document.getElementById('tdInput');addTodo(i.value,document.getElementById('tdEvent').value);i.value='';});
+    document.getElementById('tdInput').addEventListener('keydown',e=>{if(e.key==='Enter'){addTodo(e.target.value,document.getElementById('tdEvent').value);e.target.value='';}});
+
+    document.querySelectorAll('#statusChips .chip').forEach(c=>c.addEventListener('click',()=>{filters.status=c.dataset.status;syncFilterUI();renderCards();}));
+    document.querySelectorAll('#typeChips .chip').forEach(c=>c.addEventListener('click',()=>{filters.type=c.dataset.type;syncFilterUI();renderCards();}));
+    document.getElementById('searchBox').addEventListener('input',e=>{filters.search=e.target.value;renderCards();});
+    document.getElementById('sortBox').addEventListener('change',e=>{filters.sort=e.target.value;renderCards();});
+    document.getElementById('monthBox').addEventListener('change',e=>{filters.month=e.target.value;renderCards();});
+    document.getElementById('hiddenToggle').addEventListener('click',()=>{filters.showHidden=!filters.showHidden;updateHiddenCount();renderCards();});
+    document.getElementById('exportAll').addEventListener('click',exportSeason);
+
+    // auth modal
+    document.getElementById('googleBtn').addEventListener('click',doGoogle);
+    document.getElementById('signinBtn').addEventListener('click',()=>doEmail('in'));
+    document.getElementById('signupBtn').addEventListener('click',()=>doEmail('up'));
+    document.getElementById('forgotLink').addEventListener('click',doReset);
+    document.getElementById('loginX').addEventListener('click',closeLogin);
+    document.getElementById('dismissLink').addEventListener('click',closeLogin);
+
+    // settings
+    document.getElementById('settingsBtn').addEventListener('click',openSettings);
+    document.getElementById('editHomeLink').addEventListener('click',openSettings);
+    document.getElementById('settingsX').addEventListener('click',closeSettings);
+    document.getElementById('saveHome').addEventListener('click',saveHome);
+    document.getElementById('geoBtn').addEventListener('click',useMyLocation);
+
+    if(!configured){document.getElementById('configNote').hidden=false;document.getElementById('loginSub').textContent='Sign your changes to the cloud once setup is done. For now, everything saves locally.';}
+  }
+
+  function renderEverything(){
+    fillTodoEventSelect();
+    applyHome();           // home label + map + cards
+    updateStage();         // calendar + map for current month
+    renderTodos();
+    syncFilterUI();
+    updateHiddenCount();
+    updateAuthUI();
+  }
+
+  function maybeShowLogin(){
+    if(user)return;                                   // already signed in
+    if(sessionStorage.getItem('ev_login_dismissed'))return;
+    openLogin();
+  }
+
+  async function boot(){
+    wireUI();
+    if(supa){
+      try{
+        const {data:{session}}=await supa.auth.getSession();
+        user=session?.user||null;
+        if(user){
+          try{await migrateLocalToCloud();}catch(e){console.warn('migrate',e);}
+          try{await loadCloud();}catch(e){console.error(e);toast('Could not load your saved data — is the SQL run?',true);loadLocal();}
+        }else{
+          loadLocal();
+        }
+        supa.auth.onAuthStateChange((evt,sess)=>{
+          if(evt==='SIGNED_IN' && !user){location.reload();}
+          if(evt==='SIGNED_OUT'){location.reload();}
+        });
+      }catch(e){console.error(e);loadLocal();}
+    }else{
+      loadLocal();
+    }
+    renderEverything();
+    maybeShowLogin();
+  }
+
+  boot();
+</script>
+</body>
+</html>

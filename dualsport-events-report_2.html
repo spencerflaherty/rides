@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Off-Road Events — Within 4 Hours of Davidsonville, MD</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#13140f; --bg2:#1c1e16; --panel:#22251b; --panel-line:#3a3e2c;
+    --sand:#d8cba8; --ink:#ece7d6; --muted:#9a9c84;
+    --orange:#e8631a; --teal:#3fa89a; --blue:#4a91c4; --green:#7fae3a; --red:#c44a3a; --gray:#6b6d5e; --purple:#a98fd0;
+    --shadow:0 10px 30px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--ink);font-family:'Archivo',sans-serif;line-height:1.55;
+    background-image:
+      radial-gradient(circle at 12% 6%, rgba(232,99,26,.06), transparent 38%),
+      radial-gradient(circle at 88% 96%, rgba(127,174,58,.05), transparent 42%),
+      repeating-linear-gradient(0deg, transparent, transparent 38px, rgba(255,255,255,.012) 38px, rgba(255,255,255,.012) 39px),
+      repeating-linear-gradient(90deg, transparent, transparent 38px, rgba(255,255,255,.012) 38px, rgba(255,255,255,.012) 39px);
+  }
+  a{color:var(--orange)}
+
+  header{max-width:1240px;margin:0 auto;padding:44px 28px 18px;position:relative}
+  .kicker{font-family:'Saira Condensed',sans-serif;font-weight:700;letter-spacing:.3em;text-transform:uppercase;font-size:.7rem;color:var(--orange);margin-bottom:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .kicker::before{content:"";width:34px;height:2px;background:var(--orange)}
+  h1{font-family:'Archivo Black',sans-serif;font-size:clamp(1.9rem,5vw,3.5rem);line-height:.96;letter-spacing:-.01em;color:var(--sand);text-transform:uppercase;margin-bottom:15px}
+  h1 .accent{color:var(--orange)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:'Saira Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:.83rem;color:var(--muted)}
+  .meta b{color:var(--ink);font-weight:700}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .lg{display:flex;align-items:center;gap:8px;font-family:'Saira Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:.75rem;background:var(--panel);border:1px solid var(--panel-line);padding:5px 11px;border-radius:2px;color:var(--sand)}
+  .dot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(0,0,0,.3)}
+  .d-ds{background:var(--orange)}.d-en{background:var(--teal)}.d-hs{background:var(--blue)}.d-fun{background:var(--green)}.d-gncc{background:var(--red)}.d-home{background:#fff}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+
+  /* TODO accordion */
+  .todo{margin:18px auto 0;background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-left:4px solid var(--orange);border-radius:4px;box-shadow:var(--shadow);overflow:hidden}
+  .todo-head{display:flex;align-items:center;gap:12px;padding:15px 20px;cursor:pointer;user-select:none}
+  .todo-head h2{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:1.2rem;color:var(--sand)}
+  .todo-badge{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:.78rem;background:var(--orange);color:#13140f;padding:2px 9px;border-radius:20px;letter-spacing:.04em}
+  .todo-chev{margin-left:auto;font-family:'Saira Condensed';font-weight:800;color:var(--orange);transition:transform .25s;font-size:1.2rem}
+  .todo.collapsed .todo-chev{transform:rotate(-90deg)}
+  .todo-body{max-height:1400px;transition:max-height .35s ease,opacity .25s;opacity:1;padding:0 20px 16px}
+  .todo.collapsed .todo-body{max-height:0;opacity:0;padding-top:0;padding-bottom:0;overflow:hidden}
+  .todo-grp{margin-top:14px}
+  .todo-grp h3{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:.74rem;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .todo-grp h3::before{content:"";width:16px;height:2px;background:currentColor}
+  .grp-commit h3{color:var(--orange)} .grp-follow h3{color:var(--green)} .grp-review h3{color:var(--blue)}
+  .todo-item{display:flex;align-items:flex-start;gap:11px;padding:8px 10px;border:1px solid var(--panel-line);border-radius:3px;background:var(--bg2);margin-bottom:7px;transition:.15s}
+  .todo-item:hover{border-color:var(--orange)}
+  .todo-item input{appearance:none;-webkit-appearance:none;width:18px;height:18px;border:2px solid var(--muted);border-radius:3px;flex:none;margin-top:2px;cursor:pointer;position:relative;transition:.15s}
+  .todo-item input:checked{background:var(--green);border-color:var(--green)}
+  .todo-item input:checked::after{content:"✓";position:absolute;top:-2px;left:2px;color:#13140f;font-weight:800;font-size:.86rem}
+  .todo-txt{flex:1;cursor:pointer}
+  .todo-txt .tt{font-weight:600;color:var(--ink)}
+  .todo-txt .ts{font-family:'Saira Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:.72rem;color:var(--muted);margin-left:8px}
+  .todo-item.done .todo-txt .tt{text-decoration:line-through;color:var(--muted)}
+  .todo-link{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.72rem;color:var(--orange);text-decoration:none;flex:none;align-self:center;border:1px solid var(--panel-line);padding:4px 9px;border-radius:2px}
+  .todo-link:hover{border-color:var(--orange)}
+
+  /* stage */
+  .stage{margin:16px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:880px){.stage{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-radius:4px;box-shadow:var(--shadow);overflow:hidden}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--panel-line)}
+  .panel-head h2{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:1.12rem;color:var(--sand)}
+  .mnav{display:flex;align-items:center;gap:10px}
+  .mnav button{background:var(--bg2);border:1px solid var(--panel-line);color:var(--sand);width:32px;height:32px;border-radius:3px;font-size:1.1rem;cursor:pointer;font-family:'Saira Condensed',sans-serif;font-weight:800;transition:.15s;line-height:1}
+  .mnav button:hover:not(:disabled){background:var(--orange);color:#13140f;border-color:var(--orange)}
+  .mnav button:disabled{opacity:.3;cursor:not-allowed}
+  .mnav .mlabel{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:1.08rem;color:var(--orange);min-width:124px;text-align:center}
+
+  .cal{padding:14px 16px 18px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .cal-dow{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.66rem;color:var(--muted);text-align:center;padding:4px 0}
+  .cal-cell{aspect-ratio:1;border:1px solid transparent;border-radius:3px;padding:5px 4px 4px;font-size:.78rem;color:var(--muted);position:relative;display:flex;flex-direction:column}
+  .cal-cell.in{background:rgba(255,255,255,.02);border-color:var(--panel-line);color:var(--sand)}
+  .cal-cell .dnum{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:.82rem;line-height:1}
+  .cal-cell.has{cursor:pointer;transition:.15s}
+  .cal-cell.has:hover{background:rgba(232,99,26,.12);border-color:var(--orange)}
+  .cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:auto;padding-top:3px}
+  .cal-dots .cd{width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+  .cal-cell.signedup{box-shadow:inset 0 0 0 2px var(--green)}
+  .cal-cell.going{box-shadow:inset 0 0 0 2px var(--orange)}
+  .cal-cell.skip{box-shadow:inset 0 0 0 2px var(--red)}
+  .cd-ds{background:var(--orange)}.cd-en{background:var(--teal)}.cd-hs{background:var(--blue)}.cd-fun{background:var(--green)}.cd-gncc{background:var(--red)}
+
+  #map{height:474px;width:100%}
+  .maphint{font-family:'Saira Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.07em;font-size:.69rem;color:var(--muted);padding:9px 16px;border-top:1px solid var(--panel-line)}
+  .leaflet-popup-content-wrapper{background:var(--panel);color:var(--ink);border-radius:3px;border:1px solid var(--panel-line);box-shadow:var(--shadow)}
+  .leaflet-popup-tip{background:var(--panel);border:1px solid var(--panel-line)}
+  .leaflet-popup-content{margin:12px 14px;font-family:'Archivo',sans-serif}
+  .pop-tag{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:.62rem;padding:2px 7px;border-radius:2px;color:#13140f;display:inline-block;margin-bottom:6px}
+  .pop-title{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:1.04rem;line-height:1.1;color:var(--sand);margin-bottom:3px}
+  .pop-meta{font-size:.8rem;color:var(--muted)}
+  .pop-link{display:inline-block;margin-top:7px;font-weight:700;font-size:.78rem;color:var(--orange);text-decoration:none}
+  .pin{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(0,0,0,.35);box-shadow:0 3px 8px rgba(0,0,0,.5)}
+  .pin span{transform:rotate(45deg);font-family:'Saira Condensed',sans-serif;font-weight:800;color:#13140f;font-size:.72rem}
+  .home-pin{width:22px;height:22px;background:#fff;border-radius:50%;border:3px solid var(--orange);box-shadow:0 0 0 4px rgba(232,99,26,.3),0 3px 8px rgba(0,0,0,.5)}
+
+  main{max-width:1240px;margin:0 auto;padding:30px 28px 0}
+  .list-head{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:1.4rem;color:var(--sand);margin-bottom:4px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .list-head .cnt{font-size:.82rem;font-weight:600;letter-spacing:.1em;color:var(--muted)}
+  .list-sub{color:var(--muted);font-size:.9rem;margin-bottom:20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  .card{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-left-width:4px;border-radius:4px;padding:18px 18px 16px;position:relative;transition:transform .18s,box-shadow .18s,border-color .18s;scroll-margin-top:20px}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+  .card.flash{box-shadow:0 0 0 2px var(--orange),var(--shadow)}
+  .c-ds{border-left-color:var(--orange)}.c-en{border-left-color:var(--teal)}.c-hs{border-left-color:var(--blue)}.c-fun{border-left-color:var(--green)}.c-gncc{border-left-color:var(--red)}
+  .tag{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:.63rem;padding:3px 9px;border-radius:2px;color:#13140f;display:inline-block;margin-bottom:10px}
+  .t-ds{background:var(--orange)}.t-en{background:var(--teal)}.t-hs{background:var(--blue)}.t-fun{background:var(--green)}.t-gncc{background:var(--red)}
+  .card h3{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:1.24rem;line-height:1.05;color:var(--sand);margin-bottom:3px}
+  .card .when{font-family:'Saira Condensed',sans-serif;font-weight:700;color:var(--orange);font-size:.92rem;letter-spacing:.03em;text-transform:uppercase;margin-bottom:9px}
+  .row{display:flex;gap:9px;font-size:.87rem;padding:4px 0;border-top:1px dashed var(--panel-line)}
+  .row:first-of-type{border-top:none}
+  .row .lab{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.71rem;color:var(--muted);min-width:60px;flex:none;padding-top:2px}
+  .row .val{color:var(--ink)}.row .val b{color:var(--sand)}
+  .statusbox{margin-top:12px;border-radius:3px;padding:9px 11px;font-size:.85rem;display:flex;gap:9px;align-items:flex-start;border:1px solid var(--panel-line);background:var(--bg2)}
+  .statusbox .ic{font-family:'Saira Condensed',sans-serif;font-weight:800;flex:none;width:18px;text-align:center;font-size:1rem;line-height:1.3}
+  .statusbox .stxt{color:var(--ink)}
+  .sb-label{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:.66rem;display:block;margin-bottom:2px}
+  .sb-signedup{border-color:var(--green);background:rgba(127,174,58,.10)} .sb-signedup .ic,.sb-signedup .sb-label{color:var(--green)}
+  .sb-going{border-color:var(--orange);background:rgba(232,99,26,.10)} .sb-going .ic,.sb-going .sb-label{color:var(--orange)}
+  .sb-skip{border-color:var(--red);background:rgba(196,74,58,.08)} .sb-skip .ic,.sb-skip .sb-label{color:var(--red)}
+  .sb-review .ic,.sb-review .sb-label{color:var(--blue)}
+  .cta{display:inline-block;margin-top:13px;font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:.8rem;color:#13140f;background:var(--orange);padding:7px 15px;border-radius:2px;text-decoration:none;transition:background .15s}
+  .cta:hover{background:#ff7a2e}
+  .cta.ghost{background:transparent;color:var(--muted);border:1px solid var(--panel-line)}
+  .mapbtn{margin-left:8px;background:transparent;border:1px solid var(--panel-line);color:var(--sand);font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.74rem;padding:7px 12px;border-radius:2px;cursor:pointer;transition:.15s}
+  .mapbtn:hover{border-color:var(--orange);color:var(--orange)}
+  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 20px;border:1px dashed var(--panel-line);border-radius:4px}
+
+  /* sources directory */
+  .sources{max-width:1240px;margin:46px auto 0;padding:0 28px}
+  .src-banner{font-family:'Archivo Black',sans-serif;font-size:clamp(1.5rem,3.6vw,2.4rem);text-transform:uppercase;color:var(--sand);line-height:1;margin-bottom:8px}
+  .src-banner .accent{color:var(--orange)}
+  .src-intro{color:var(--muted);font-size:.92rem;max-width:760px;margin-bottom:22px}
+  .src-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+  .src-card{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--panel-line);border-top:3px solid var(--orange);border-radius:4px;padding:16px 17px}
+  .src-card h3{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:1.02rem;color:var(--sand);margin-bottom:3px}
+  .src-card .sc-sub{font-family:'Saira Condensed',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:.66rem;color:var(--orange);margin-bottom:11px}
+  .src-card ul{list-style:none}
+  .src-card li{padding:6px 0;border-top:1px dashed var(--panel-line);font-size:.86rem;line-height:1.4}
+  .src-card li:first-child{border-top:none}
+  .src-card a{font-weight:600;text-decoration:none;color:var(--sand);border-bottom:1px solid rgba(232,99,26,.4)}
+  .src-card a:hover{color:var(--orange)}
+  .src-card .note{display:block;color:var(--muted);font-size:.78rem;margin-top:1px}
+  .src-card a.ext::after{content:" ↗";color:var(--orange);font-size:.78rem}
+  .src-tier{grid-column:1/-1;font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.14em;font-size:.8rem;color:var(--orange);margin:18px 0 2px;display:flex;align-items:center;gap:12px}
+  .src-tier::after{content:"";flex:1;height:1px;background:var(--panel-line)}
+
+  footer{max-width:1240px;margin:34px auto 0;padding:22px 28px 60px;border-top:1px solid var(--panel-line);color:var(--muted);font-size:.82rem}
+  footer b{color:var(--sand)} footer a{color:var(--orange);text-decoration:none} footer a:hover{text-decoration:underline}
+  .caveats{margin-top:10px;padding-left:18px} .caveats li{margin:5px 0}
+  @media(max-width:560px){#map{height:380px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Field Recon · DRZ400 · Dual Sport · Enduro · Hare Scramble · ADV · GNCC</div>
+  <h1>Dirt Within <span class="accent">Four Hours</span><br>· Jun → Nov 2026</h1>
+  <div class="meta">
+    <span>Home: <b>Davidsonville, MD (21035)</b></span>
+    <span>Ring: <b>~210 mi drive</b></span>
+    <span>Bike: <b>Street-legal DRZ400</b></span>
+    <span>Sources: <b>see the full directory below ↓</b></span>
+  </div>
+  <div class="legend">
+    <span class="lg"><span class="dot d-home"></span>Home</span>
+    <span class="lg"><span class="dot d-ds"></span>Dual Sport</span>
+    <span class="lg"><span class="dot d-fun"></span>Fun / Family Ride</span>
+    <span class="lg"><span class="dot d-hs"></span>Hare Scramble</span>
+    <span class="lg"><span class="dot d-en"></span>Enduro</span>
+    <span class="lg"><span class="dot d-gncc"></span>GNCC</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- TODO accordion -->
+  <div class="todo" id="todo">
+    <div class="todo-head" id="todoHead">
+      <h2>To-Do</h2>
+      <span class="todo-badge" id="todoBadge">0</span>
+      <span class="todo-chev">▾</span>
+    </div>
+    <div class="todo-body" id="todoBody"></div>
+  </div>
+
+  <!-- stage: calendar + map -->
+  <div class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Calendar</h2>
+        <div class="mnav">
+          <button id="prevM" aria-label="Previous month">‹</button>
+          <span class="mlabel" id="mLabel">June 2026</span>
+          <button id="nextM" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="cal">
+        <div class="cal-grid" id="dowRow"></div>
+        <div class="cal-grid" id="calGrid" style="margin-top:5px"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Map <span style="font-family:'Archivo';font-weight:400;font-size:.8rem;color:var(--muted);text-transform:none;letter-spacing:0">— showing <span id="mapMonth">June</span></span></h2>
+      </div>
+      <div id="map"></div>
+      <div class="maphint">Pins = events that month · Dashed ring ≈ 4 hr drive · Click a pin for details · Click the map once to enable zoom</div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="list-head">Events — <span id="listMonth">June 2026</span> <span class="cnt" id="listCount"></span></div>
+  <div class="list-sub">Not ranked — date order, color-coded by type. Each card shows a <b>current status</b>. Calendar arrows change the month; map + list follow along.</div>
+  <div class="grid" id="cards"></div>
+</main>
+
+<!-- SOURCES DIRECTORY -->
+<section class="sources">
+  <div class="src-banner">The <span class="accent">Source Directory</span></div>
+  <p class="src-intro">Everywhere off-road events in your range get posted — series, clubs, parks, aggregators, agencies, and Facebook groups. Most of the calendar above came from these. When you've burned through it, this is where the next batch lives. Cross-referenced and crawled until the trail went cold. <b>Tip:</b> the clubs host the events; the series & aggregators list them; the Facebook groups post the last-minute and unsanctioned ride calls.</p>
+
+  <div class="src-grid">
+
+    <div class="src-tier">AMA — National Hub &amp; Series</div>
+    <div class="src-card">
+      <h3>AMA (American Motorcyclist Assoc.)</h3>
+      <div class="sc-sub">The master calendar &amp; sanctioning body</div>
+      <ul>
+        <li><a class="ext" href="https://americanmotorcyclist.com/events/event-resources/find-an-event/" target="_blank" rel="noopener">AMA Find-an-Event</a><span class="note">Filter every sanctioned event by type, state, date</span></li>
+        <li><a class="ext" href="https://americanmotorcyclist.com/riding/off-road-riding/dual-sport-riding/beta-ama-national-dual-sport-series/" target="_blank" rel="noopener">Beta AMA National Dual Sport Series</a><span class="note">18 rounds — Shenandoah 500 &amp; Hammer Run are in range</span></li>
+        <li><a class="ext" href="https://americanmotorcyclist.com/ama-national-adventure-riding-series-schedule-2026/" target="_blank" rel="noopener">Triumph AMA National Adventure Series</a><span class="note">12 ADV events — experienced riders</span></li>
+        <li><a class="ext" href="https://americanmotorcyclist.com/find-a-charter/" target="_blank" rel="noopener">AMA Charter Club / District finder</a><span class="note">Local clubs by zip</span></li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <h3>AMA Districts (regional)</h3>
+      <div class="sc-sub">Where the local race series live</div>
+      <ul>
+        <li><a class="ext" href="https://www.google.com/search?q=AMA+District+6+enduro+hare+scramble+2026+schedule" target="_blank" rel="noopener">AMA District 6</a><span class="note">Central / eastern PA off-road</span></li>
+        <li><a class="ext" href="https://www.google.com/search?q=AMA+District+7+motorcycle+2026+schedule" target="_blank" rel="noopener">AMA District 7</a><span class="note">MD / DE / DC / N. Virginia</span></li>
+        <li><a class="ext" href="http://www.d13mx.com/" target="_blank" rel="noopener">AMA District 13 (d13mx.com)</a><span class="note">Virginia — mostly motocross</span></li>
+      </ul>
+    </div>
+
+    <div class="src-tier">Race Series — Enduro · Hare Scramble · Cross-Country</div>
+    <div class="src-card">
+      <h3>ECEA</h3>
+      <div class="sc-sub">East Coast Enduro Assoc. — your #1 source</div>
+      <ul>
+        <li><a class="ext" href="https://ecea.org/events/" target="_blank" rel="noopener">ecea.org/events</a><span class="note">Full PA/NJ/NY/DE schedule + .ics export</span></li>
+        <li><a class="ext" href="https://ecea.org/clubs" target="_blank" rel="noopener">ECEA member clubs (19+)</a><span class="note">Each club = its own events</span></li>
+        <li><a class="ext" href="https://ecea.org/resources#community" target="_blank" rel="noopener">ECEA Facebook groups list</a></li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <h3>GNCC</h3>
+      <div class="sc-sub">Grand National Cross Country</div>
+      <ul>
+        <li><a class="ext" href="https://gnccracing.com/events" target="_blank" rel="noopener">gnccracing.com/events</a><span class="note">Snowshoe &amp; Mason-Dixon are the in-range rounds</span></li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <h3>Virginia series</h3>
+      <div class="sc-sub">Hare scramble &amp; cross-country</div>
+      <ul>
+        <li><a class="ext" href="https://www.vchss.org/2026-schedule" target="_blank" rel="noopener">VCHSS</a><span class="note">7-round spring series; mostly SW/central VA</span></li>
+        <li><a class="ext" href="https://www.google.com/search?q=VXCS+Virginia+Cross+Country+Series+2026+schedule" target="_blank" rel="noopener">VXCS (Virginia Cross Country)</a><span class="note">Moto + quad; southern VA</span></li>
+        <li><a class="ext" href="https://www.racevcorr.com/" target="_blank" rel="noopener">VCORR</a><span class="note">Off-season GP / night / team racing</span></li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <h3>National enduro &amp; hard enduro</h3>
+      <div class="sc-sub">Pro-level — list as you advance</div>
+      <ul>
+        <li><a class="ext" href="https://nationalenduro.app/schedule" target="_blank" rel="noopener">ANEC (ex-NEPG National Enduro)</a><span class="note">Burning Rock, WV is nearest (still a haul)</span></li>
+        <li><a class="ext" href="https://www.ushardenduro.com/events-schedule" target="_blank" rel="noopener">AMA National Hard Enduro</a><span class="note">Very advanced</span></li>
+        <li><a class="ext" href="https://www.naenduro.com/" target="_blank" rel="noopener">North American Enduro Cup</a></li>
+      </ul>
+    </div>
+
+    <div class="src-tier">Dual Sport / ADV Aggregators &amp; Route Sources</div>
+    <div class="src-card">
+      <h3>USDualSports</h3>
+      <div class="sc-sub">The dual-sport/ADV event clearinghouse</div>
+      <ul>
+        <li><a class="ext" href="https://www.usdualsports.com/events" target="_blank" rel="noopener">Event calendar</a></li>
+        <li><a class="ext" href="https://www.usdualsports.com/dual-sport-rides-near-me/" target="_blank" rel="noopener">Dual sport rides near you</a></li>
+        <li><a class="ext" href="https://www.usdualsports.com/adventure-rides-near-me/" target="_blank" rel="noopener">Adventure rides near you</a></li>
+        <li><a class="ext" href="https://www.usdualsports.com/adventure-motorcycle-gpx-map/" target="_blank" rel="noopener">Interactive GPX route map</a></li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <h3>Forums &amp; route catalogs</h3>
+      <div class="sc-sub">Rides that never hit a calendar</div>
+      <ul>
+        <li><a class="ext" href="https://advrider.com/f/forums/rally-central.85/" target="_blank" rel="noopener">ADVrider — Rally Central</a><span class="note">Organized + grassroots rides, by region</span></li>
+        <li><a class="ext" href="https://www.motoridersuniverse.com/events/" target="_blank" rel="noopener">Motoriders Universe events</a></li>
+        <li><a class="ext" href="https://ridebdr.com/mabdr/" target="_blank" rel="noopener">Mid-Atlantic BDR (MABDR)</a><span class="note">Multi-day route — VA→PA backcountry</span></li>
+        <li><a class="ext" href="https://www.riderplanet-usa.com/" target="_blank" rel="noopener">RiderPlanet USA</a><span class="note">Trails, parks &amp; some events</span></li>
+      </ul>
+    </div>
+
+    <div class="src-tier">Clubs &amp; Promoters (the people running the events)</div>
+    <div class="src-card">
+      <h3>PA / NJ dual-sport &amp; race clubs</h3>
+      <div class="sc-sub">Feed ECEA + national series</div>
+      <ul>
+        <li><a class="ext" href="https://dvtrailriders.org" target="_blank" rel="noopener">Delaware Valley Trail Riders</a><span class="note">Michaux DS, Foggy Mtn, High Steaks, Dirty Santa</span></li>
+        <li><a class="ext" href="https://www.durtydabbers.com/" target="_blank" rel="noopener">Durty Dabbers MC</a><span class="note">Great Adventure DS (late May) + Modern Trials (Sep 12–13)</span></li>
+        <li><a class="ext" href="https://www.google.com/search?q=Reading+Off+Road+Riders+RORR+dual+sport" target="_blank" rel="noopener">Reading Off Road Riders (RORR)</a><span class="note">Reading HS, Oct dual sport</span></li>
+        <li><a class="ext" href="https://www.google.com/search?q=TCSMC+Hammer+Run+National+Dual+Sport" target="_blank" rel="noopener">Tri-County Sportsmen (TCSMC)</a><span class="note">Hammer Run National DS</span></li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <h3>MD / WV / VA clubs</h3>
+      <div class="sc-sub">Closest to home</div>
+      <ul>
+        <li><a class="ext" href="https://www.stonealley.com/program/WMMA/group/GreenRidge" target="_blank" rel="noopener">Western Maryland MC Assoc.</a><span class="note">Green Ridge Dual Sport — annual early May</span></li>
+        <li><a class="ext" href="https://www.facebook.com/groups/700876140116042" target="_blank" rel="noopener">Fairmont Dual Sport Riders (FDSR)</a><span class="note">304 Detour — you're signed up</span></li>
+        <li><a class="ext" href="http://www.damnriders.org/" target="_blank" rel="noopener">DAMN Riders</a><span class="note">MD/PA grassroots dual sport</span></li>
+        <li><a class="ext" href="https://www.google.com/search?q=Shenandoah+500+dual+sport+Mount+Solon+VA+registration" target="_blank" rel="noopener">Shenandoah 500 host club</a><span class="note">Mount Solon, VA — Oct 3–4</span></li>
+      </ul>
+    </div>
+
+    <div class="src-tier">Ride Destinations &amp; Off-Road Parks</div>
+    <div class="src-card">
+      <h3>Parks (ride any weekend)</h3>
+      <div class="sc-sub">Pay-to-ride + occasional events</div>
+      <ul>
+        <li><a class="ext" href="https://www.aoaatrails.com/" target="_blank" rel="noopener">AOAA — Coal Township, PA</a><span class="note">8,000 acres, all skill levels</span></li>
+        <li><a class="ext" href="https://www.rauschcreek.net/" target="_blank" rel="noopener">Rausch Creek Off-Road Park, PA</a><span class="note">Hosts periodic dual-sport days</span></li>
+        <li><a class="ext" href="https://www.trailsheaven.com/" target="_blank" rel="noopener">Hatfield-McCoy Trails, WV</a><span class="note">Big destination weekend</span></li>
+        <li><a class="ext" href="https://www.buddscreek.com/" target="_blank" rel="noopener">Budds Creek MX Park, MD</a><span class="note">DER hare scrambles + demos, ~1 hr</span></li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <h3>State forests (dual-sport-legal roads)</h3>
+      <div class="sc-sub">DIY ride days on the DRZ</div>
+      <ul>
+        <li><a class="ext" href="https://dnr.maryland.gov/forests/Pages/greenridge/maps.aspx" target="_blank" rel="noopener">Green Ridge State Forest, MD</a><span class="note">~2 hr; gravel/dirt/unimproved roads</span></li>
+        <li><a class="ext" href="https://www.google.com/search?q=Michaux+State+Forest+motorized+roads+map" target="_blank" rel="noopener">Michaux State Forest, PA</a><span class="note">Your home turf</span></li>
+        <li><a class="ext" href="https://www.google.com/search?q=Bald+Eagle+Sproul+Tioga+state+forest+dual+sport+roads" target="_blank" rel="noopener">Bald Eagle / Sproul / Tioga SF, PA</a><span class="note">Central PA dual-sport country</span></li>
+      </ul>
+    </div>
+
+    <div class="src-tier">Facebook Groups (last-minute &amp; unsanctioned rides)</div>
+    <div class="src-card">
+      <h3>Regional DS / ADV groups</h3>
+      <div class="sc-sub">Where ride calls actually drop</div>
+      <ul>
+        <li><a class="ext" href="https://www.facebook.com/groups/700876140116042" target="_blank" rel="noopener">FDSR — 304 Detour group</a></li>
+        <li><a class="ext" href="https://www.facebook.com/groups/usdualsports" target="_blank" rel="noopener">USDualSports / DS-ADV Riders</a></li>
+        <li><a class="ext" href="https://www.facebook.com/search/groups/?q=Maryland%20dual%20sport%20riders" target="_blank" rel="noopener">Maryland Dual Sport Riders</a><span class="note">search result — pick the active one</span></li>
+        <li><a class="ext" href="https://www.facebook.com/search/groups/?q=Mid-Atlantic%20adventure%20dual%20sport" target="_blank" rel="noopener">Mid-Atlantic ADV / Dual Sport</a></li>
+        <li><a class="ext" href="https://www.facebook.com/search/groups/?q=DMV%20dual%20sport%20adventure%20riders" target="_blank" rel="noopener">DMV Dual Sport / ADV</a></li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <h3>State &amp; bike-specific groups</h3>
+      <div class="sc-sub">More feet on the ground</div>
+      <ul>
+        <li><a class="ext" href="https://www.facebook.com/search/groups/?q=Pennsylvania%20dual%20sport%20riders" target="_blank" rel="noopener">PA Dual Sport Riders</a></li>
+        <li><a class="ext" href="https://www.facebook.com/search/groups/?q=Virginia%20dual%20sport%20adventure%20riders" target="_blank" rel="noopener">Virginia DS / ADV Riders</a></li>
+        <li><a class="ext" href="https://www.facebook.com/search/groups/?q=West%20Virginia%20adventure%20dual%20sport" target="_blank" rel="noopener">West Virginia ADV / DS</a></li>
+        <li><a class="ext" href="https://www.facebook.com/search/groups/?q=DRZ400%20riders" target="_blank" rel="noopener">DRZ400 owners' groups</a><span class="note">Ride-buddy + setup intel</span></li>
+        <li><a class="ext" href="https://www.facebook.com/AOAATRAILS/" target="_blank" rel="noopener">AOAA Trails (Facebook)</a></li>
+      </ul>
+    </div>
+
+    <div class="src-tier">Signup &amp; Listing Platforms</div>
+    <div class="src-card">
+      <h3>Where you actually register</h3>
+      <div class="sc-sub">Bookmark the logins</div>
+      <ul>
+        <li><a class="ext" href="https://www.moto-tally.com/ECEA/Enduro/PreEntry.aspx" target="_blank" rel="noopener">Moto-Tally</a><span class="note">ECEA enduro / hare scramble pre-entry</span></li>
+        <li><a class="ext" href="https://www.webscorer.com/" target="_blank" rel="noopener">Webscorer</a><span class="note">304 Detour &amp; many dual sports</span></li>
+        <li><a class="ext" href="https://race.vchss.org/" target="_blank" rel="noopener">LiveLaps (VCHSS signups)</a></li>
+        <li><a class="ext" href="https://northeastwheelsevents.com/" target="_blank" rel="noopener">Northeast Wheels Events</a><span class="note">Regional everything-on-wheels calendar</span></li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <b>How this was built:</b> crawled the AMA (all four off-road series), ECEA, GNCC, VCHSS, VCORR, ANEC &amp; Hard Enduro, the dual-sport/ADV aggregators, the host clubs, and the off-road parks — following each source to the next until the leads ran out. The calendar above holds every concretely-dated event I could confirm within ~4 hours, June–Nov 2026. The directory holds the rest of the haystack.
+  <ul class="caveats">
+    <li>Drive times are estimates from 21035; the dashed ring is straight-line, not a true drive-time isochrone.</li>
+    <li>"Venue TBA" events (RORR Dual Sport, Fall Brawl, Foggy Mountain) are mapped at an approximate spot until the club posts the location.</li>
+    <li>Dual sports &amp; nationals sell out fast and statuses change daily — confirm on each event/club page before planning. Signup opens on rolling dates.</li>
+    <li>Out past the ring this window (left off the map on purpose): Barbed Wire &amp; Ithaca enduros (NY, ~4.5 hr), Monkey Butt 2-Day (Newark NY, ~5 hr), most VCHSS/VXCS rounds (southern VA), ANEC Burning Rock (Sophia WV, ~5+ hr).</li>
+    <li>To-do checkboxes save in your browser only (this device) — they won't sync elsewhere.</li>
+  </ul>
+</footer>
+
+<script>
+  const HOME = {lat:38.9295, lng:-76.6300};
+  const TYPE = {
+    ds:{label:'Dual Sport', color:'#e8631a'},
+    en:{label:'Enduro', color:'#3fa89a'},
+    hs:{label:'Hare Scramble', color:'#4a91c4'},
+    fun:{label:'Fun Ride', color:'#7fae3a'},
+    gncc:{label:'GNCC', color:'#c44a3a'}
+  };
+
+  // plan = your decision: signedup | going | skip | review
+  const events = [
+    // JUNE
+    {start:'2026-06-14', dates:'Sun · Jun 14', short:'Jun 14', title:'Reading Hare Scramble', club:'ECEA / RORR', type:'hs', loc:'Maple Grove Raceway, Mohnton, PA', lat:40.2247, lng:-75.9560, drive:'~2.25 hr', plan:'review', sTxt:'Pre-entry open via Moto-Tally. New trail / venue for 2026. Beginner "C" class. Decide if you want a first race.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-06-20', dates:'Sat · Jun 20', short:'Jun 20', title:'Michaux Dual Sport', club:'ECEA / DVTR', type:'ds', loc:'Shippensburg Fairgrounds, PA', lat:40.0506, lng:-77.5180, drive:'~2 hr', plan:'skip', sTxt:"You're out for this one. (Oldest dual sport in the country; sells out in minutes anyway.)", link:'https://dvtrailriders.org', linktxt:'DVTR Info'},
+    {start:'2026-06-21', dates:'Sun · Jun 21', short:'Jun 21', title:'Shotgun Enduro', club:'ECEA / HMDR', type:'en', loc:'Ryan Twp Grove, Barnsville, PA', lat:40.8323, lng:-76.0119, drive:'~2.75 hr', plan:'review', sTxt:'Old-school rock run in Delano. Sold out in 2025 — would need fast pre-entry.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-06-26', dates:'Fri–Sun · Jun 26–28', short:'Jun 26–28', title:'Snowshoe GNCC', club:'GNCC · Rd 9', type:'gncc', loc:'Snowshoe Mtn Resort, WV', lat:38.4115, lng:-79.9962, drive:'~4 hr', plan:'review', sTxt:'"Toughest, most unique race on the whole GNCC tour." Reachable, but not a first-event pick.', link:'https://gnccracing.com/events', linktxt:'Series Info'},
+    {start:'2026-06-28', dates:'Sun · Jun 28', short:'Jun 28', title:'OxBo Hare Scramble', club:'ECEA / SPER', type:'hs', loc:'Tower City, PA', lat:40.5895, lng:-76.5536, drive:'~2.5 hr', plan:'review', sTxt:'Fast, flowy, rocky. Pre-entry open. Youth event the day before.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Pre-Enter'},
+
+    // JULY
+    {start:'2026-07-17', dates:'Fri–Sun · Jul 17–19', short:'Jul 17–19', title:'304 Detour Dual Sport', club:'FDSR', type:'ds', loc:'Bunner Ridge Rd, Fairmont, WV', lat:39.5028, lng:-80.0989, drive:'~3.5 hr', plan:'signedup', sTxt:'Registered. Club-guided easy loop + ~85 mi hard loop. Still waiting on more ride info and to get into the FDSR Facebook group.', link:'https://www.facebook.com/groups/700876140116042', linktxt:'FDSR Group', followups:[{txt:'Get into the FDSR Facebook group', link:'https://www.facebook.com/groups/700876140116042', linktxt:'Open group'},{txt:'Watch for 304 Detour ride details & roll chart (July)', link:'', linktxt:''}]},
+    {start:'2026-07-19', dates:'Sun · Jul 19', short:'Jul 19', title:'Foggy Mountain Enduro', club:'ECEA / DVTR', type:'en', loc:'PA mountains — venue TBA', lat:41.05, lng:-77.50, drive:'~3–4 hr', plan:'review', sTxt:'Pennsylvania mountain riding. Location not yet posted — watch Moto-Tally / ECEA.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Watch'},
+
+    // AUGUST
+    {start:'2026-08-09', dates:'Sun · Aug 9', short:'Aug 9', title:'Three Springs Enduro', club:'ECEA / GMER', type:'en', loc:'8418 Ashman St, Three Springs, PA', lat:40.1973, lng:-77.9930, drive:'~2.5 hr', plan:'review', sTxt:'"Teetering on the edge." Enduro signup opens closer to the date — check Moto-Tally.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-08-23', dates:'Sun · Aug 23', short:'Aug 23', title:'High Steaks Hare Scramble', club:'ECEA / DVTR', type:'hs', loc:'399 Halstead Rd, Clifford, PA', lat:41.6420, lng:-75.5860, drive:'~3.75 hr', plan:'review', sTxt:'Great NE-PA woods racing. Furthest in-window pick — borderline on the 4-hr ring.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-08-30', dates:'Sun · Aug 30', short:'Aug 30', title:'Beehive Enduro', club:'ECEA / CDR · DER', type:'en', loc:'9544 Noble St, Mauricetown, NJ', lat:39.2698, lng:-74.9921, drive:'~3 hr', plan:'review', sTxt:'"Back in the sand." South-Jersey sandy enduro — different flavor from the rocky PA stuff.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+
+    // SEPTEMBER
+    {start:'2026-09-05', dates:'Sat · Sep 5', short:'Sep 5', title:'High Mountain Fun Day', club:'ECEA / HMDR', type:'fun', loc:'142 Cabin Lane, Sugarloaf, PA', lat:40.9890, lng:-76.0680, drive:'~3 hr', plan:'review', sTxt:'"Wallow in the Hollow" — a no-pressure family fun ride, not a race. Easiest warmup before Michaux.', link:'https://ecea.org/events/2026/26-special-hmdr-fun', linktxt:'Event Page'},
+    {start:'2026-09-13', dates:'Sun · Sep 13', short:'Sep 13', title:'Michaux Enduro', club:'ECEA / SPER', type:'en', loc:'1975 Birch Run Rd, Biglerville, PA', lat:40.0600, lng:-77.2700, drive:'~1.75 hr', plan:'going', sTxt:'You want this one. Runs in Michaux State Forest — your home turf, and the closest event all year. Enduro pre-entry opens closer to the date on Moto-Tally; get on it.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Sign Up'},
+    {start:'2026-09-20', dates:'Sun · Sep 20', short:'Sep 20', title:'Moonshine Enduro', club:'ECEA / VFTR · RORR', type:'en', loc:'Fern Glen, PA', lat:40.9700, lng:-76.0600, drive:'~3 hr', plan:'review', sTxt:'NE-PA enduro. Signup opens closer to the date.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-09-27', dates:'Sun · Sep 27', short:'Sep 27', title:'Fall Brawl Hare Scramble', club:'ECEA / MMC', type:'hs', loc:'New Jersey — venue TBA', lat:40.20, lng:-74.70, drive:'~3 hr', plan:'review', sTxt:'Fall racing in NJ. Location not yet posted — watch ECEA.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Watch'},
+
+    // OCTOBER
+    {start:'2026-10-02', dates:'Fri–Sun · Oct 2–4', short:'Oct 2–4', title:'Mason-Dixon GNCC', club:'GNCC · Rd 11', type:'gncc', loc:'Mathews Farm, Mount Morris, PA', lat:39.7300, lng:-80.1800, drive:'~3.5 hr', plan:'review', sTxt:'The in-range GNCC, across from High Point Raceway. Non-points for top pros (ISDE), but amateur racing runs — more approachable than Snowshoe.', link:'https://gnccracing.com/events', linktxt:'Series Info'},
+    {start:'2026-10-03', dates:'Sat–Sun · Oct 3–4', short:'Oct 3–4', title:'Shenandoah 500 Dual Sport', club:'Beta AMA National Dual Sport', type:'ds', loc:'Mount Solon, VA', lat:38.3457, lng:-79.0664, drive:'~3 hr', plan:'review', sTxt:'A premier AMA National Dual Sport right in the Shenandoah Valley — scenic backroads + two-track, street-legal, exactly the DRZ wheelhouse. Strong candidate worth a serious look.', link:'https://www.google.com/search?q=Shenandoah+500+dual+sport+2026+registration', linktxt:'Find Signup'},
+    {start:'2026-10-11', dates:'Sun · Oct 11', short:'Oct 11', title:'RORR Dual Sport', club:'ECEA / RORR', type:'ds', loc:'PA — venue TBA (Reading area)', lat:40.30, lng:-76.00, drive:'~2.25 hr', plan:'review', sTxt:'ECEA bills it as "basically an enduro" — a meatier dual sport. Good DRZ fit once the venue posts.', link:'https://ecea.org/events/2026/26-ds-rorr', linktxt:'Event Page'},
+    {start:'2026-10-18', dates:'Sun · Oct 18', short:'Oct 18', title:'Sahara Sands Hare Scramble', club:'ECEA / PBER · SJER', type:'hs', loc:'Eagleswood Township, NJ', lat:39.6600, lng:-74.3100, drive:'~3.25 hr', plan:'review', sTxt:'"Almost desert racing" — deep coastal sand. A real change of surface from the woods.', link:'https://moto-tally.com/ecea/ecea/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-10-25', dates:'Sun · Oct 25', short:'Oct 25', title:'Scrub Pine Enduro', club:'ECEA / OCCR', type:'en', loc:'Brendan T. Byrne Forest, Vincentown, NJ', lat:39.8800, lng:-74.5800, drive:'~3 hr', plan:'review', sTxt:'Pine Barrens enduro. Signup opens closer to the date.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'},
+    {start:'2026-10-31', dates:'Sat–Sun · Oct 31–Nov 1', short:'Oct 31–Nov 1', title:'Hammer Run National Dual Sport', club:'ECEA / TCSMC · AMA National DS', type:'ds', loc:'Port Elizabeth, NJ', lat:39.3120, lng:-74.9810, drive:'~3.25 hr', plan:'review', sTxt:'"Braaaaaaaap." A two-day AMA National Dual Sport — solid street-legal DRZ ride to close out the season.', link:'https://ecea.org/events/2026/26-ds-tcsmc', linktxt:'Event Page'},
+
+    // NOVEMBER
+    {start:'2026-11-15', dates:'Sun · Nov 15', short:'Nov 15', title:'Pine Barons Enduro', club:'ECEA / PBER', type:'en', loc:'1555 Route 532, Woodland Twp, NJ', lat:39.7800, lng:-74.5500, drive:'~3 hr', plan:'review', sTxt:'Last ECEA points enduro of the year in the pines before winter.', link:'https://moto-tally.com/ECEA/Enduro/PreEntry.aspx', linktxt:'Pre-Enter'}
+  ];
+
+  const planMeta = {
+    signedup:{cls:'sb-signedup', ic:'✓', label:'Signed up'},
+    going:{cls:'sb-going', ic:'★', label:'Going — sign up'},
+    skip:{cls:'sb-skip', ic:'✕', label:'Not going'},
+    review:{cls:'sb-review', ic:'?', label:'Undecided — review'}
+  };
+
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const MIN={y:2026,m:5}, MAX={y:2026,m:10};
+  let cur={y:2026,m:5};
+
+  function slug(e){return e.start+'-'+e.title.replace(/[^a-z0-9]/gi,'').slice(0,10);}
+  function cardId(e){return 'ev-'+slug(e);}
+  function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+  // map
+  const map=L.map('map',{scrollWheelZoom:false}).setView([39.4,-77.9],7);
+  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap (CC-BY-SA) · © OpenStreetMap'}).addTo(map);
+  L.circle([HOME.lat,HOME.lng],{radius:338000,color:'#e8631a',weight:1.5,dashArray:'7 7',fillColor:'#e8631a',fillOpacity:0.04}).addTo(map);
+  const homeIcon=L.divIcon({className:'',html:'<div class="home-pin"></div>',iconSize:[22,22],iconAnchor:[11,11]});
+  L.marker([HOME.lat,HOME.lng],{icon:homeIcon}).addTo(map).bindPopup('<div class="pop-title">Home Base</div><div class="pop-meta">Davidsonville, MD · 21035</div>');
+  map.on('click',()=>map.scrollWheelZoom.enable());
+  let eventLayer=L.layerGroup().addTo(map);
+
+  function monthEvents(y,m){return events.filter(e=>{const d=new Date(e.start+'T00:00:00');return d.getFullYear()===y&&d.getMonth()===m;});}
+
+  function renderMap(y,m){
+    eventLayer.clearLayers();
+    const evs=monthEvents(y,m); const bounds=[[HOME.lat,HOME.lng]];
+    evs.forEach(e=>{
+      const col=TYPE[e.type].color; const day=new Date(e.start+'T00:00:00').getDate();
+      const icon=L.divIcon({className:'',html:`<div class="pin" style="background:${col}"><span>${day}</span></div>`,iconSize:[26,26],iconAnchor:[13,24],popupAnchor:[0,-22]});
+      const mk=L.marker([e.lat,e.lng],{icon}).addTo(eventLayer);
+      const link=e.link?`<a class="pop-link" href="${e.link}" target="_blank" rel="noopener">${e.linktxt} →</a>`:'';
+      mk.bindPopup(`<span class="pop-tag" style="background:${col}">${TYPE[e.type].label}</span><div class="pop-title">${e.title}</div><div class="pop-meta">${e.dates} · ${e.loc} · ${e.drive}</div>${link}`);
+      mk.on('click',()=>{const c=document.getElementById(cardId(e));if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),1600);}});
+      bounds.push([e.lat,e.lng]);
+    });
+    if(bounds.length>1)map.fitBounds(bounds,{padding:[45,45],maxZoom:9}); else map.setView([HOME.lat,HOME.lng],7);
+  }
+
+  function renderCalendar(y,m){
+    const dow=['Su','Mo','Tu','We','Th','Fr','Sa'];
+    const dowRow=document.getElementById('dowRow'); dowRow.innerHTML='';
+    dow.forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;dowRow.appendChild(el);});
+    const grid=document.getElementById('calGrid'); grid.innerHTML='';
+    const startDow=new Date(y,m,1).getDay(); const days=new Date(y,m+1,0).getDate();
+    const byDay={}; monthEvents(y,m).forEach(e=>{const d=new Date(e.start+'T00:00:00').getDate();(byDay[d]=byDay[d]||[]).push(e);});
+    for(let i=0;i<startDow;i++){const c=document.createElement('div');c.className='cal-cell';grid.appendChild(c);}
+    for(let d=1;d<=days;d++){
+      const c=document.createElement('div'); c.className='cal-cell in';
+      const list=byDay[d]||[]; let dots='';
+      if(list.length){
+        c.classList.add('has');
+        if(list.some(e=>e.plan==='signedup'))c.classList.add('signedup');
+        if(list.some(e=>e.plan==='going'))c.classList.add('going');
+        if(list.some(e=>e.plan==='skip'))c.classList.add('skip');
+        dots='<div class="cal-dots">'+list.map(e=>`<span class="cd cd-${e.type}"></span>`).join('')+'</div>';
+        c.title=list.map(e=>e.title).join(' · ');
+        c.addEventListener('click',()=>jumpToEvent(list[0]));
+      }
+      c.innerHTML=`<span class="dnum">${d}</span>${dots}`; grid.appendChild(c);
+    }
+  }
+
+  function renderCards(y,m){
+    const wrap=document.getElementById('cards'); wrap.innerHTML='';
+    const evs=monthEvents(y,m).sort((a,b)=>a.start.localeCompare(b.start));
+    document.getElementById('listCount').textContent=evs.length?`· ${evs.length} event${evs.length>1?'s':''}`:'';
+    if(!evs.length){wrap.innerHTML='<div class="empty">No events mapped this month within the ring. Hit the Source Directory below to keep hunting.</div>';return;}
+    evs.forEach(e=>{
+      const pm=planMeta[e.plan];
+      const card=document.createElement('div'); card.className='card c-'+e.type; card.id=cardId(e);
+      const cta=e.link?`<a class="cta${e.plan==='skip'?' ghost':''}" href="${e.link}" target="_blank" rel="noopener">${e.linktxt} →</a>`:'';
+      card.innerHTML=`
+        <span class="tag t-${e.type}">${TYPE[e.type].label}</span>
+        <h3>${e.title}</h3>
+        <div class="when">${e.dates}</div>
+        <div class="row"><span class="lab">Club</span><span class="val">${e.club}</span></div>
+        <div class="row"><span class="lab">Where</span><span class="val">${e.loc}</span></div>
+        <div class="row"><span class="lab">Drive</span><span class="val"><b>${e.drive}</b></span></div>
+        <div class="statusbox ${pm.cls}"><span class="ic">${pm.ic}</span><span class="stxt"><span class="sb-label">Current status — ${pm.label}</span>${e.sTxt}</span></div>
+        <div>${cta}<button class="mapbtn" data-lat="${e.lat}" data-lng="${e.lng}">Show on map</button></div>`;
+      wrap.appendChild(card);
+    });
+    wrap.querySelectorAll('.mapbtn').forEach(b=>b.addEventListener('click',()=>{document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'});map.setView([+b.dataset.lat,+b.dataset.lng],10);}));
+  }
+
+  function jumpToEvent(e){
+    const d=new Date(e.start+'T00:00:00'); cur={y:d.getFullYear(),m:d.getMonth()}; update();
+    setTimeout(()=>{const c=document.getElementById(cardId(e));if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),1600);}},90);
+  }
+
+  // TODO
+  function buildTodos(){
+    const t=[];
+    events.forEach(e=>{
+      if(e.plan==='going') t.push({grp:'commit',key:'su-'+slug(e),tt:'Sign up — '+e.title,ts:e.short,ev:e,link:e.link,linktxt:e.linktxt});
+      if(e.plan==='signedup'&&e.followups) e.followups.forEach((f,i)=>t.push({grp:'follow',key:'fu-'+slug(e)+i,tt:f.txt,ts:e.title,ev:e,link:f.link,linktxt:f.linktxt}));
+      if(e.plan==='review') t.push({grp:'review',key:'rv-'+slug(e),tt:e.title,ts:e.short,ev:e});
+    });
+    return t;
+  }
+  function renderTodos(){
+    const todos=buildTodos(); const body=document.getElementById('todoBody'); body.innerHTML='';
+    const groups=[['commit','Commit & sign up','grp-commit'],['follow','Follow up — 304 Detour','grp-follow'],['review','Review & decide','grp-review']];
+    let remaining=0;
+    groups.forEach(([g,label,cls])=>{
+      const items=todos.filter(t=>t.grp===g); if(!items.length)return;
+      const wrap=document.createElement('div'); wrap.className='todo-grp '+cls;
+      wrap.innerHTML=`<h3>${label}</h3>`;
+      items.forEach(it=>{
+        const checked=lsGet('todo:'+it.key)==='1'; if(!checked)remaining++;
+        const row=document.createElement('div'); row.className='todo-item'+(checked?' done':'');
+        const linkHtml=it.link?`<a class="todo-link" href="${it.link}" target="_blank" rel="noopener">${it.linktxt||'Open'} ↗</a>`:'';
+        row.innerHTML=`<input type="checkbox" ${checked?'checked':''}><span class="todo-txt"><span class="tt">${it.tt}</span><span class="ts">${it.ts}</span></span>${linkHtml}`;
+        const cb=row.querySelector('input');
+        cb.addEventListener('change',()=>{lsSet('todo:'+it.key,cb.checked?'1':'');row.classList.toggle('done',cb.checked);updateBadge();});
+        row.querySelector('.todo-txt').addEventListener('click',()=>jumpToEvent(it.ev));
+        wrap.appendChild(row);
+      });
+      body.appendChild(wrap);
+    });
+    document.getElementById('todoBadge').textContent=remaining+' to do';
+  }
+  function updateBadge(){
+    const todos=buildTodos(); let r=0; todos.forEach(t=>{if(lsGet('todo:'+t.key)!=='1')r++;});
+    document.getElementById('todoBadge').textContent=r+' to do';
+  }
+  document.getElementById('todoHead').addEventListener('click',()=>document.getElementById('todo').classList.toggle('collapsed'));
+
+  function update(){
+    document.getElementById('mLabel').textContent=`${MONTHS[cur.m]} ${cur.y}`;
+    document.getElementById('mapMonth').textContent=MONTHS[cur.m];
+    document.getElementById('listMonth').textContent=`${MONTHS[cur.m]} ${cur.y}`;
+    document.getElementById('prevM').disabled=(cur.y===MIN.y&&cur.m<=MIN.m);
+    document.getElementById('nextM').disabled=(cur.y===MAX.y&&cur.m>=MAX.m);
+    renderCalendar(cur.y,cur.m); renderMap(cur.y,cur.m); renderCards(cur.y,cur.m);
+  }
+  document.getElementById('prevM').addEventListener('click',()=>{if(cur.m>MIN.m||cur.y>MIN.y){cur.m--;if(cur.m<0){cur.m=11;cur.y--;}update();}});
+  document.getElementById('nextM').addEventListener('click',()=>{if(cur.m<MAX.m||cur.y<MAX.y){cur.m++;if(cur.m>11){cur.m=0;cur.y++;}update();}});
+
+  renderTodos();
+  update();
+</script>
+</body>
+</html>
