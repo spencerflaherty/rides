@@ -15,15 +15,13 @@ calendar export, per-user home/distance). Built on a single static `index.html`
 - **Pointers, not copies.** Reference the file/line; don't paste its contents.
 
 ## Status (2026-06-07)
-- ✅ App built & verified — `index.html` (works standalone in localStorage/demo
-  mode with no setup).
+- ✅ Live at https://rides.spencerflaherty.com — GitHub Pages from the `rides`
+  repo, DNS resolving. (HTTPS cert auto-provisions; enable "Enforce HTTPS" in
+  repo Settings → Pages once available.)
 - ✅ Supabase wired — URL + publishable key in the CONFIG block, `index.html:559`.
-- ✅ DB live — 3 tables + row-level security created (all return 200).
-- ✅ Deployed to GitHub Pages from the `rides` repo.
-- ⬜ **Google OAuth** — Spencer to set up (email/password sign-in already works).
-- ⬜ **DNS** — Spencer to add CNAME `rides` → `spencerflaherty.github.io` at GoDaddy,
-  then the custom domain goes live. Until then the app is reachable at the
-  `*.github.io` Pages URL.
+- ✅ DB live — 3 tables + row-level security (`supabase-setup.sql`).
+- ✅ Auth working — email/password (email confirmation currently OFF) and Google
+  OAuth (client accepted by Google; callback `…supabase.co/auth/v1/callback`).
 
 ## Map of files
 - `index.html` — the app. Single file, no build step. Supabase via CDN. Source of
