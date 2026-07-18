@@ -865,7 +865,9 @@
   let todos = [];          // [{id,text,done,event_key,sort_order}]
   let bikes = [];          // [{id,name,type,notes,sort_order}]
   let profile = {...DEFAULT_PROFILE};
-  let filters = {status:'all', type:'all', search:'', sort:'date', month:'all', region:'all', withinRadius:false, showHidden:false};
+  const DEFAULT_FILTERS={status:'all',type:'all',search:'',sort:'date',month:'all',region:'all',withinRadius:false,showHidden:false};
+  const FILTERS_STORAGE_KEY='ev_list_filters_v1';
+  let filters = {...DEFAULT_FILTERS};
 
   /* ---------- helpers ---------- */
   // event_key from the DB if present, else the legacy slug formula (keeps keys stable).
@@ -885,6 +887,26 @@
   function stateOf(e){if(e.state)return e.state;const m=(e.loc||'').match(/,\s*([A-Z]{2})\b/);return m?m[1]:'';}
   function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
   function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function loadSavedFilters(){
+    try{
+      const saved=JSON.parse(lsGet(FILTERS_STORAGE_KEY)||'null');
+      if(!saved||typeof saved!=='object')return;
+      const status=['all','my','going','signedup','maybe','notgoing','undecided'];
+      const type=['all',...Object.keys(TYPE)];
+      const sort=['date','distance','type'];
+      filters={
+        status:status.includes(saved.status)?saved.status:'all',
+        type:type.includes(saved.type)?saved.type:'all',
+        search:typeof saved.search==='string'?saved.search.slice(0,200):'',
+        sort:sort.includes(saved.sort)?saved.sort:'date',
+        month:saved.month==='all'||/^(?:[0-9]|1[01])$/.test(String(saved.month))?String(saved.month):'all',
+        region:typeof saved.region==='string'&&saved.region?saved.region:'all',
+        withinRadius:saved.withinRadius===true,
+        showHidden:saved.showHidden===true
+      };
+    }catch(e){filters={...DEFAULT_FILTERS};}
+  }
+  function saveFilters(){lsSet(FILTERS_STORAGE_KEY,JSON.stringify(filters));}
   function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
   function persistMode(){return (supa && user) ? 'cloud' : 'local';}
   function st(key){return state[key] || {};}
@@ -1371,6 +1393,9 @@
       +(regions.length?`<optgroup label="Region">${regions.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('')}</optgroup>`:'')
       +(states.length?`<optgroup label="State">${states.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}</optgroup>`:'');
     rb.value=keepR;
+    if(![...mb.options].some(o=>o.value===filters.month))filters.month='all';
+    if(![...rb.options].some(o=>o.value===filters.region))filters.region='all';
+    saveFilters();
   }
   function updateHiddenCount(){
     const n=events.filter(isHidden).length;
@@ -1575,14 +1600,14 @@
     document.getElementById('tdAdd').addEventListener('click',()=>{const i=document.getElementById('tdInput');addTodo(i.value,document.getElementById('tdEvent').value);i.value='';});
     document.getElementById('tdInput').addEventListener('keydown',e=>{if(e.key==='Enter'){addTodo(e.target.value,document.getElementById('tdEvent').value);e.target.value='';}});
 
-    document.querySelectorAll('#statusChips .chip').forEach(c=>c.addEventListener('click',()=>{filters.status=c.dataset.status;syncFilterUI();renderCards();}));
-    document.querySelectorAll('#typeChips .chip').forEach(c=>c.addEventListener('click',()=>{filters.type=c.dataset.type;syncFilterUI();renderCards();}));
-    document.getElementById('searchBox').addEventListener('input',e=>{filters.search=e.target.value;renderCards();});
-    document.getElementById('sortBox').addEventListener('change',e=>{filters.sort=e.target.value;renderCards();});
-    document.getElementById('monthBox').addEventListener('change',e=>{filters.month=e.target.value;renderCards();});
-    document.getElementById('regionBox').addEventListener('change',e=>{filters.region=e.target.value;renderCards();});
-    document.getElementById('radiusToggle').addEventListener('click',()=>{filters.withinRadius=!filters.withinRadius;syncFilterUI();renderCards();});
-    document.getElementById('hiddenToggle').addEventListener('click',()=>{filters.showHidden=!filters.showHidden;updateHiddenCount();renderCards();});
+    document.querySelectorAll('#statusChips .chip').forEach(c=>c.addEventListener('click',()=>{filters.status=c.dataset.status;saveFilters();syncFilterUI();renderCards();}));
+    document.querySelectorAll('#typeChips .chip').forEach(c=>c.addEventListener('click',()=>{filters.type=c.dataset.type;saveFilters();syncFilterUI();renderCards();}));
+    document.getElementById('searchBox').addEventListener('input',e=>{filters.search=e.target.value;saveFilters();renderCards();});
+    document.getElementById('sortBox').addEventListener('change',e=>{filters.sort=e.target.value;saveFilters();renderCards();});
+    document.getElementById('monthBox').addEventListener('change',e=>{filters.month=e.target.value;saveFilters();renderCards();});
+    document.getElementById('regionBox').addEventListener('change',e=>{filters.region=e.target.value;saveFilters();renderCards();});
+    document.getElementById('radiusToggle').addEventListener('click',()=>{filters.withinRadius=!filters.withinRadius;saveFilters();syncFilterUI();renderCards();});
+    document.getElementById('hiddenToggle').addEventListener('click',()=>{filters.showHidden=!filters.showHidden;saveFilters();updateHiddenCount();renderCards();});
     document.getElementById('exportAll').addEventListener('click',exportSeason);
 
     // inline radius slider — live-updates the map ring, distance filter, and labels
@@ -1678,6 +1703,7 @@
       loadLocal();
     }
     await eventsLoaded;
+    loadSavedFilters();
     renderEverything();
     maybeShowLogin();
   }

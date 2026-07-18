@@ -17,6 +17,7 @@ Postgres are wired, DB + RLS are live, and the shared `public.events` table is
 seeded with 149 nationwide events through October 2026, including competitive and
 organized ADV/dual-sport/group rides. Past events and user-hidden events are
 excluded from the list by default and can be revealed with the combined filter.
+Event-list filter selections persist across browser refreshes.
 The custom domain serves the current build;
 GitHub Pages HTTPS certificate repair/enforcement remains an infrastructure
 follow-up.
