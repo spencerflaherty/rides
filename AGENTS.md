@@ -18,6 +18,10 @@ seeded with 149 nationwide events through October 2026, including competitive an
 organized ADV/dual-sport/group rides. Past events and user-hidden events are
 excluded from the list by default and can be revealed with the combined filter.
 Event-list filter selections persist across browser refreshes.
+The app now includes a Riding Locations tab with a verified Mid-Atlantic riding
+directory, personal address/coordinate/map-pin spots, and per-location GPX
+storage, map viewing, export, and deletion. The new Supabase tables and location
+seed SQL are implemented locally and still need to be run against the live DB.
 The custom domain serves the current build;
 GitHub Pages HTTPS certificate repair/enforcement remains an infrastructure
 follow-up.
@@ -30,6 +34,7 @@ follow-up.
   `events` (public read), per-user `user_event_status` (now incl. `bike_id`),
   `user_todos`, `user_profiles` (now incl. `radius_mi`/`radius_hr`), `user_bikes`.
 - `events-seed.sql` — seeds/updates the shared `events` table (re-runnable upsert).
+- `riding-locations-seed.sql` — seeds/updates the shared riding-area directory.
 - `INGESTION.md` — event row schema + the workflow/source checklist for adding
   events (incl. the planned nationwide expansion). Read before crawling new events.
 - `SETUP_GUIDE.md` — Spencer-facing setup walkthrough (Supabase, OAuth, DNS, Pages).

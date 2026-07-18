@@ -82,6 +82,47 @@ create table if not exists public.user_bikes (
 );
 create index if not exists user_bikes_user_idx on public.user_bikes(user_id);
 
+-- 5) Shared riding-location directory ---------------------------------------
+create table if not exists public.riding_locations (
+  location_key text primary key,
+  name         text not null,
+  access       text not null check (access in ('free','paid')),
+  kind         text,
+  address      text,
+  lat          double precision not null,
+  lng          double precision not null,
+  drive        text,
+  details      text,
+  requirements text,
+  link         text,
+  created_at   timestamptz not null default now()
+);
+
+-- 6) Personal riding spots --------------------------------------------------
+create table if not exists public.user_riding_spots (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  name       text not null,
+  address    text,
+  lat        double precision not null check (lat between -90 and 90),
+  lng        double precision not null check (lng between -180 and 180),
+  notes      text,
+  created_at timestamptz not null default now()
+);
+create index if not exists user_riding_spots_user_idx on public.user_riding_spots(user_id);
+
+-- 7) Per-user GPX library, attached to shared or custom location keys --------
+create table if not exists public.user_location_gpx (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  location_key text not null,
+  file_name    text not null,
+  gpx_data     text not null,
+  created_at   timestamptz not null default now()
+);
+create index if not exists user_location_gpx_user_idx on public.user_location_gpx(user_id);
+create index if not exists user_location_gpx_location_idx on public.user_location_gpx(user_id,location_key);
+
 -- ============================================================
 --  Row Level Security — each user can only touch their own rows
 -- ============================================================
@@ -90,11 +131,18 @@ alter table public.user_event_status enable row level security;
 alter table public.user_todos          enable row level security;
 alter table public.user_profiles       enable row level security;
 alter table public.user_bikes          enable row level security;
+alter table public.riding_locations    enable row level security;
+alter table public.user_riding_spots   enable row level security;
+alter table public.user_location_gpx   enable row level security;
 
 -- events: anyone (anon + signed-in) can read; nobody can write from the client.
 -- Inserts/updates happen via the SQL editor or service_role, which bypass RLS.
 drop policy if exists "events public read" on public.events;
 create policy "events public read" on public.events
+  for select using (true);
+
+drop policy if exists "riding locations public read" on public.riding_locations;
+create policy "riding locations public read" on public.riding_locations
   for select using (true);
 
 -- user_event_status policies
@@ -129,5 +177,19 @@ drop policy if exists "own bikes write" on public.user_bikes;
 create policy "own bikes write" on public.user_bikes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Done. Shared events (read-only) + four per-user tables locked to the user.
+drop policy if exists "own riding spots select" on public.user_riding_spots;
+create policy "own riding spots select" on public.user_riding_spots
+  for select using (auth.uid() = user_id);
+drop policy if exists "own riding spots write" on public.user_riding_spots;
+create policy "own riding spots write" on public.user_riding_spots
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "own location gpx select" on public.user_location_gpx;
+create policy "own location gpx select" on public.user_location_gpx
+  for select using (auth.uid() = user_id);
+drop policy if exists "own location gpx write" on public.user_location_gpx;
+create policy "own location gpx write" on public.user_location_gpx
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Done. Shared events/locations (read-only) + per-user tables locked to the user.
 -- Seed the events table with events-seed.sql.
