@@ -428,7 +428,7 @@
         <option value="all">All regions</option>
       </select>
       <button class="ftoggle" id="radiusToggle">Within radius</button>
-      <button class="ftoggle" id="hiddenToggle">Show hidden (0)</button>
+      <button class="ftoggle" id="hiddenToggle">Show hidden &amp; past (0)</button>
       <button class="fexport" id="exportAll">⬇ Export my season (.ics)</button>
     </div>
   </div>
@@ -865,6 +865,13 @@
   function slug(e){return e.event_key || (e.start+'-'+e.title.replace(/[^a-z0-9]/gi,'').slice(0,10));}
   function cardId(e){return 'ev-'+slug(e);}
   function eventByKey(k){return events.find(e=>slug(e)===k);}
+  // Compare date-only strings so an event stays visible for its full local calendar day.
+  function todayLocal(){
+    const d=new Date(), pad=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+  function isPast(e){return e.start<todayLocal();}
+  function isHidden(e){return !!st(slug(e)).hidden || isPast(e);}
   // first number out of a drive string like "~2.25 hr" / "~3–4 hr"
   function parseDriveHr(s){const m=(s||'').match(/[\d.]+/);return m?parseFloat(m[0]):null;}
   // state code: explicit field, else last 2 letters of the location string
@@ -1224,7 +1231,7 @@
      ============================================================ */
   function passesFilters(e){
     const s=st(slug(e));
-    if(!filters.showHidden && s.hidden) return false;
+    if(!filters.showHidden && isHidden(e)) return false;
     if(filters.status!=='all'){
       const cs=s.status||null;
       if(filters.status==='my'){ if(!['going','signedup'].includes(cs))return false; }
@@ -1260,7 +1267,7 @@
       const key=slug(e), s=st(key);
       const mi=Math.round(distMiles(e.lat,e.lng));
       const card=document.createElement('div');
-      card.className='card'+(s.hidden?' hidden-card':''); card.id=cardId(e);
+      card.className='card'+(isHidden(e)?' hidden-card':''); card.id=cardId(e);
 
       const sbtns=Object.keys(STATUS).map(k=>
         `<button class="sbtn ${k}${s.status===k?' active':''}" data-status="${k}">${STATUS[k].label}</button>`).join('');
@@ -1359,8 +1366,8 @@
     rb.value=keepR;
   }
   function updateHiddenCount(){
-    const n=events.filter(e=>st(slug(e)).hidden).length;
-    document.getElementById('hiddenToggle').textContent=`${filters.showHidden?'Hiding off':'Show hidden'} (${n})`;
+    const n=events.filter(isHidden).length;
+    document.getElementById('hiddenToggle').textContent=`${filters.showHidden?'Hide hidden & past':'Show hidden & past'} (${n})`;
   }
 
   /* ============================================================

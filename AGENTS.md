@@ -15,7 +15,9 @@ served from GitHub Pages. Cost: $0.
 ✅ Live and fully working — Supabase auth (email/password + Google OAuth) and
 Postgres are wired, DB + RLS are live, and the shared `public.events` table is
 seeded with 143 nationwide events through October 2026, including competitive and
-organized ADV/dual-sport/group rides. The custom domain serves the current build;
+organized ADV/dual-sport/group rides. Past events and user-hidden events are
+excluded from the list by default and can be revealed with the combined filter.
+The custom domain serves the current build;
 GitHub Pages HTTPS certificate repair/enforcement remains an infrastructure
 follow-up.
 
