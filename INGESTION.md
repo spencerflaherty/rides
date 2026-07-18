@@ -2,8 +2,7 @@
 
 The app reads its master event list from the **`public.events`** Supabase table
 (world-readable, admin-write). This doc is the playbook for filling that table —
-starting Mid-Atlantic and expanding to the whole US. **No events have been crawled
-yet beyond the original 21; this is the setup.**
+expanded nationwide. The catalog currently contains **143 verified events** through October 31, 2026, combining competitive series with organized dual-sport, ADV, training, charity, camping, and club rides.
 
 ## The event row
 
@@ -54,23 +53,25 @@ on conflict (event_key) do update set start_date=excluded.start_date /* …other
 The client cannot write to `events` (RLS allows select only). Inserts run via the SQL
 editor or a service-role key — never ship the service-role key in `index.html`.
 
-## National source checklist (to crawl later)
+## National source coverage
 
-Per region/state, work these source categories — the same ladder used for the
-Mid-Atlantic set (see the in-app Source Directory). The first expansion pass added
-the Aug. 1–2 Quarry Run and Copperhead dual sports from organizer pages, AMA-series
-coverage, and USDualSports:
+The July 2026 nationwide pass used the source ladder below across every US region
+and added the durable calendars to the in-app Source Directory. Organizer and
+series pages are preferred; aggregators are discovery leads that should be checked
+against the host whenever possible.
 
-- [ ] **AMA hub** — Find-an-Event, national DS/ADV series, district/charter finder
-- [ ] **Race series** — enduro / hare scramble / cross-country / GNCC by region
-- [ ] **DS/ADV aggregators** — USDualSports, RiderPlanet, ADVrider Rally Central, BDRs
-- [ ] **Clubs & promoters** — the orgs that actually host, found via the series
-- [ ] **Off-road parks** — pay-to-ride venues
-- [ ] **Signup platforms** — Moto-Tally, Webscorer, etc. (where dates get posted)
-- [ ] **Regional Facebook groups** — last-minute / unsanctioned ride calls
+- [x] **AMA hub** — Find-an-Event, national DS/ADV series, district/charter finder
+- [x] **Race series** — enduro / hare scramble / cross-country / GNCC by region
+- [x] **DS/ADV aggregators** — USDualSports, RiderPlanet, ADVrider Rally Central, BDRs
+- [x] **Clubs & promoters** — the orgs that actually host, found via the series
+- [ ] **Off-road parks** — pay-to-ride venues; still needs a systematic national pass
+- [x] **Signup platforms** — Moto-Tally, Webscorer, etc. (where dates get posted)
+- [ ] **Regional Facebook groups** — last-minute / unsanctioned ride calls; not
+  treated as verified unless an organizer publishes a stable date and location
 
-Suggested regions: Northeast, Mid-Atlantic ✅, Southeast, Midwest, Plains, Mountain
-West, Southwest, Pacific Northwest, California.
+Covered regions: Northeast, Mid-Atlantic, Southeast, Gulf Coast, Appalachia,
+Midwest, Great Lakes, Plains, Texas, Mountain West, Southwest, California, and
+Pacific Northwest.
 
 For each found event: geocode the venue → build the row → upsert. Keep `drive`
 honest (it feeds the radius filter); for far/national events a rough hour estimate is fine.
