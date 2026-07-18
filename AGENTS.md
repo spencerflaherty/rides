@@ -13,11 +13,9 @@ served from GitHub Pages. Cost: $0.
 
 ## Status
 ✅ Live and fully working — Supabase auth (email/password + Google OAuth) and
-Postgres are wired, DB + RLS are live, custom domain resolves over HTTPS.
-⚠️ **Action needed before the new build is fully live:** the master event list now
-loads from a shared `public.events` table. Re-run `supabase-setup.sql` then run
-`events-seed.sql` in the Supabase SQL editor. Until then the app silently falls
-back to the inline `FALLBACK_EVENTS` copy in `index.html` (page still works).
+Postgres are wired, DB + RLS are live, and the shared `public.events` table is
+seeded. The custom domain serves the current build; GitHub Pages HTTPS certificate
+repair/enforcement remains an infrastructure follow-up.
 
 ## Map of files
 - `index.html` — the app. Single file, no build step, Supabase via CDN. Source of
