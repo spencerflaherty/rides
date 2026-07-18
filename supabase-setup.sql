@@ -15,7 +15,7 @@ create table if not exists public.events (
   short_label text,          -- "Jun 14"
   title       text not null,
   club        text,
-  type        text,          -- ds | en | hs | fun | gncc
+  type        text,          -- ds | en | hs | fun | gncc | mx
   loc         text,
   lat         double precision,
   lng         double precision,

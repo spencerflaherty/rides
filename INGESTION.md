@@ -2,7 +2,7 @@
 
 The app reads its master event list from the **`public.events`** Supabase table
 (world-readable, admin-write). This doc is the playbook for filling that table —
-expanded nationwide. The catalog currently contains **143 verified events** through October 31, 2026, combining competitive series with organized dual-sport, ADV, training, charity, camping, and club rides.
+expanded nationwide. The catalog currently contains **149 verified events** through October 31, 2026, combining competitive series with organized dual-sport, ADV, training, charity, camping, and club rides.
 
 ## The event row
 
@@ -23,7 +23,7 @@ e.g. `2026-06-14` + `Reading Hare Scramble` → `2026-06-14-ReadingHar`.
 | `short_label` | text   | Compact, e.g. `Jun 26–28`. Used in dropdowns.      |
 | `title`       | text   | Event name.                                        |
 | `club`        | text   | Host / series, e.g. `ECEA / DVTR`.                 |
-| `type`        | text   | one of: `ds en hs fun gncc` (see app legend).      |
+| `type`        | text   | one of: `ds en hs fun gncc mx` (see app legend).   |
 | `loc`         | text   | Venue + city + state.                              |
 | `lat` / `lng` | float  | Decimal degrees. Approximate for "venue TBA".      |
 | `drive`       | text   | Estimate, e.g. `~2.25 hr`. Parsed by the radius filter. |
@@ -33,8 +33,8 @@ e.g. `2026-06-14` + `Reading Hare Scramble` → `2026-06-14-ReadingHar`.
 | `state`       | text   | 2-letter, e.g. `PA`. Powers the region filter.     |
 | `region`      | text   | Grouping, e.g. `Mid-Atlantic`, `Southeast`.        |
 
-> `type` currently has 5 values. If nationwide series need more (motocross, trials,
-> flat track, GP), add the type to the app's `TYPE` map + legend + CSS color classes
+> `type` currently has 6 values. If nationwide series need more (trials, flat track,
+> GP), add the type to the app's `TYPE` map + legend + CSS color classes
 > in `index.html` first, then use it here.
 
 ## How to add events
